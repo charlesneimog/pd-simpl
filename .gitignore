@@ -1,3 +1,5 @@
 *.so
 *.pd_linux
 *.o
+.cache/*
+compile_commands.json
