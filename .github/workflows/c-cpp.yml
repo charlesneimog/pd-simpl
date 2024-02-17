@@ -1,0 +1,113 @@
+name: C/C++ CI
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+jobs:
+  macos-universal-build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Install PureData and Deps
+        run: |
+          brew install --cask pd
+          brew install fftw
+          brew install gsl
+      - name: Build server Object
+        run: make
+      - name: Make zip file
+        run: |
+          mkdir pd-simpl
+          mkdir pd-simpl/src
+      - name: Upload Object
+        uses: actions/upload-artifact@v3
+        with:
+          name: pd-simpl
+          path: pd-simpl
+      - name: Obj Folder
+        run: mv server.pd_darwin test/server.pd_darwin
+      - name: Run Test
+        run: |
+          /Applications/Pd-*.app/Contents/Resources/bin/pd -stderr -nogui simpl-help.pd &
+  # windows-build:
+  #   runs-on: windows-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         submodules: recursive
+  #         fetch-depth: 0
+  #     - if: runner.os == 'Windows'
+  #       name: "Install mingw deps"
+  #       uses: msys2/setup-msys2@v2
+  #       with:
+  #         install: make mingw-w64-x86_64-openssl mingw-w64-x86_64-crypto++ autoconf automake libtool mingw-w64-x86_64-gcc libtool mingw-w64-x86_64-libwinpthread-git
+  #         update: false
+  #     - name: Create pd-server
+  #       run: mkdir pd-server
+  #     - name: Install PureData
+  #       run: choco install puredata --yes
+  #     - if: runner.os == 'Windows'
+  #       name: Build server
+  #       shell: msys2 {0}
+  #       run: make
+  #     - name: Rename server.dll to server.m_amd64
+  #       run: mv server.dll server.m_amd64
+  #     - name: Find External Dependencies
+  #       shell: msys2 {0}
+  #       run: |
+  #         where libcrypto-3-x64.dll > libcrypto.txt
+  #         where libssl-3-x64.dll > libssl.txt
+  #         cp $(cat libcrypto.txt) pd-server
+  #         cp $(cat libssl.txt) pd-server
+  #     - name: Move files to pd-server
+  #       run: "cp server.m_amd64 pd-server\\\ncp server-help.pd pd-server\\ \ncp src/server.cc pd-server\\\n"
+  #     - name: upload pd-server
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: pd-server
+  #         path: pd-server
+  #     - name: Run Test
+  #       run: |
+  #         cp test/test.pd pd-server/test.pd
+  #         cmd /c "C:\Program Files\Pd\bin\pd.exe" -nogui pd-server\test.pd
+  #       # # # ===============================================================================================
+  #       # # # ===============================================================================================
+  #       # # # ===============================================================================================
+  # # build for Linux
+  linux-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Install PureData
+        run: sudo apt-get install puredata -y
+      - name: Install ssl-dev
+        run: sudo apt-get install libfftw3-dev -y
+      - name: Build
+        run: make
+      - name: Create pd-server
+        run: mkdir pd-server
+      - name: Copy files to pd-server
+        run: |
+          cp server.pd_linux server-help.pd pd-server
+          mkdir pd-server/src
+          cp src/server.cc pd-server/src
+          mkdir pd-server/public
+          cp -r public/* pd-server/public
+      - name: Upload Object
+        uses: actions/upload-artifact@v3
+        with:
+          name: pd-server
+          path: pd-server
+      - name: Zip pd-server
+        run: zip -r pd-server.zip pd-server
+      - name: Move test.pd to pd-server
+        run: cp test/test.pd pd-server/test.pd
+      - name: Run Test
+        run: pd -nogui pd-server/test.pd
