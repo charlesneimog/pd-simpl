@@ -9,16 +9,23 @@ set(PD_FLOATSIZE64 "OFF")
 
 # Required packages
 add_subdirectory(Libraries/simpl)
+set_target_properties(simpl PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 
+# Suppress warnings for the simpl library
+if(MSVC)
+    target_compile_options(simpl PRIVATE /W0)
+else()
+    target_compile_options(simpl PRIVATE -w)
+endif()
 
 # Add one or several externals (5):   
 add_pd_external(pd-simpl simpl 
-    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/pd-simpl.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/s-peaks~.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/s-partials.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/s-synth~.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/s-get.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/s-create.cpp
+    ${CMAKE_SOURCE_DIR}/Sources/pd-simpl.cpp
+    ${CMAKE_SOURCE_DIR}/Sources/s-peaks~.cpp
+    ${CMAKE_SOURCE_DIR}/Sources/s-partials.cpp
+    ${CMAKE_SOURCE_DIR}/Sources/s-synth~.cpp
+    ${CMAKE_SOURCE_DIR}/Sources/s-get.cpp
+    ${CMAKE_SOURCE_DIR}/Sources/s-create.cpp
 )
 
 # Add include directories for pd-simpl project

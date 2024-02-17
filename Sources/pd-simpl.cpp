@@ -5,33 +5,6 @@ t_class *simpl_class;
 // ==============================================
 typedef struct _simpl { // It seems that all the objects are some kind of class.
     t_object xObj;      // convensao no puredata source code
-
-    // t_float xSample;    // audio to fe used in CLASSMAINSIGIN
-    // t_int nChs;
-    //
-    // // multitreading
-    // std::vector<simpl::s_sample> audioIn;
-    // t_sample *previousOut;
-    // t_int running;
-    //
-    // // Peak Detection Parameters
-    // t_int pdFrameSize;
-    // t_int pdHopSize;
-    //
-    // // Partial Tracking Parameters
-    // t_int ptFrameSize;
-    // t_int ptHopSize;
-    //
-    // // Frames
-    // simpl::Frames frames;
-    //
-    // // Outlet/Inlet
-    // t_outlet *sigOut;
-    // t_int n;
-    //
-    // // Partial Tracking
-    // simpl::Peaks *pPeaks; // previous List Peak
-
 } t_simpl;
 
 // // ==============================================

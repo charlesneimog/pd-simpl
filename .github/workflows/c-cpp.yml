@@ -17,22 +17,25 @@ jobs:
           brew install --cask pd
           brew install fftw
           brew install gsl
-      - name: Build server Object
-        run: make
+      - name: Build Object
+        run: |
+          cmake . -B build
+          cmake --build build
       - name: Make zip file
         run: |
           mkdir pd-simpl
-          mkdir pd-simpl/src
+          cp *.so pd-simpl
+          cp *.d_amd64 pd-simpl
       - name: Upload Object
         uses: actions/upload-artifact@v3
         with:
           name: pd-simpl
           path: pd-simpl
-      - name: Obj Folder
-        run: mv server.pd_darwin test/server.pd_darwin
-      - name: Run Test
-        run: |
-          /Applications/Pd-*.app/Contents/Resources/bin/pd -stderr -nogui simpl-help.pd &
+          # - name: Obj Folder
+          #   run: mv server.pd_darwin test/server.pd_darwin
+          # - name: Run Test
+          #   run: |
+          #     /Applications/Pd-*.app/Contents/Resources/bin/pd -stderr -nogui simpl-help.pd &
   # windows-build:
   #   runs-on: windows-latest
   #   steps:
@@ -85,29 +88,30 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-      - name: Install PureData
-        run: sudo apt-get install puredata -y
-      - name: Install ssl-dev
-        run: sudo apt-get install libfftw3-dev -y
-      - name: Build
-        run: make
-      - name: Create pd-server
-        run: mkdir pd-server
-      - name: Copy files to pd-server
+      - name: Install Build Dependencies
         run: |
-          cp server.pd_linux server-help.pd pd-server
-          mkdir pd-server/src
-          cp src/server.cc pd-server/src
-          mkdir pd-server/public
-          cp -r public/* pd-server/public
+          curl -L -o pd.tar.gz https://msp.ucsd.edu/Software/pd-0.54-1.src.tar.gz
+          tar -xzf pd.tar.gz
+          rm pd.tar.gz
+          mv pd-* pure-data
+      - name: Install PureData and Python
+        env:
+          pythonPackage: python${{ matrix.python-version }}-dev
+        run: |
+          sudo apt-get update
+          sudo add-apt-repository ppa:pure-data/pure-data -y
+          sudo apt-get install puredata -y
+      - name: Build Object
+        run: |
+          cmake . -B build
+          cmake --build build
+      - name: Make zip file
+        run: |
+          mkdir pd-simpl
+          cp *.so pd-simpl
+          cp *.l_amd64 pd-simpl
       - name: Upload Object
         uses: actions/upload-artifact@v3
         with:
-          name: pd-server
-          path: pd-server
-      - name: Zip pd-server
-        run: zip -r pd-server.zip pd-server
-      - name: Move test.pd to pd-server
-        run: cp test/test.pd pd-server/test.pd
-      - name: Run Test
-        run: pd -nogui pd-server/test.pd
+          name: pd-simpl
+          path: pd-simpl
