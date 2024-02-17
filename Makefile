@@ -12,7 +12,7 @@ ifeq (MINGW,$(findstring MINGW,$(uname)))
   
 
 else ifeq (Linux,$(findstring Linux,$(uname)))
-  	cflags = -I simpl/src/simpl/ -I simpl/src/mq -I simpl/src/sms/ -I simpl/src/loris/ -I simpl/src/sndobj -I fftw3 -I gsl -I gslcblas -Wno-unused-parameter -Wno-overloaded-virtual
+  	cflags = -I simpl/src/simpl/ -I simpl/src/mq -I simpl/src/sms/ -I simpl/src/loris/ -I simpl/src/sndobj -I fftw3 -I gsl -I gslcblas -Wno-unused-parameter -Wno-overloaded-virtual -Wdeprecated-declarations
   	ldlibs = -L simpl/build/ -l simpl
   
 
@@ -42,7 +42,13 @@ simpl:
 #│               Sources                │
 #╰──────────────────────────────────────╯
 
-simpl.class.sources = pd-obj/pd_simpl.cpp pd-obj/mqpeaks.cpp pd-obj/get.cpp
+simpl.class.sources = \
+		pd-obj/pd-simpl.cpp \
+		pd-obj/s-peaks~.cpp \
+		pd-obj/s-partials.cpp \
+		pd-obj/s-synth~.cpp \
+		pd-obj/s-get.cpp \
+		pd-obj/s-create.cpp
 
 
 #╭──────────────────────────────────────╮

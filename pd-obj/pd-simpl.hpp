@@ -1,21 +1,25 @@
-// clang-format off
-
 #include <m_pd.h>
-#include <simpl.h>
 #include <thread>
+
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#include <simpl.h> // TODO: Someday I will need to fix this
+#pragma GCC diagnostic warning "-Wdeprecated-declarations"
 
 #define SIMPL_SIGTOTAL(s) ((t_int)((s)->s_length * (s)->s_nchans))
 
 // ╭─────────────────────────────────────╮
-// │           Peak Detection            │
+// │            Main Objects             │
 // ╰─────────────────────────────────────╯
-void mqpeaks_tilde_setup(); 
-
+void s_peaks_tilde_setup();
+void s_partials_setup();
+void s_synth_tilde_setup();
 
 // ╭─────────────────────────────────────╮
-// │               Helpers               │
+// │                 Get                 │
 // ╰─────────────────────────────────────╯
-void getAmps_setup();
-void getFreqs_setup();
+void s_get_setup();
 
-
+// ╭─────────────────────────────────────╮
+// │               Create                │
+// ╰─────────────────────────────────────╯
+void s_create_setup();
