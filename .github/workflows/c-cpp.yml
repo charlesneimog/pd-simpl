@@ -88,19 +88,18 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-      - name: Install Build Dependencies
+      - name: PureData Sources
         run: |
           curl -L -o pd.tar.gz https://msp.ucsd.edu/Software/pd-0.54-1.src.tar.gz
           tar -xzf pd.tar.gz
           rm pd.tar.gz
           mv pd-* pure-data
-      - name: Install PureData and Python
-        env:
-          pythonPackage: python${{ matrix.python-version }}-dev
-        run: |
           sudo apt-get update
           sudo add-apt-repository ppa:pure-data/pure-data -y
           sudo apt-get install puredata -y
+      - name: Dependencies
+        run: |
+          sudo apt install fftw3-dev
       - name: Build Object
         run: |
           cmake . -B build
