@@ -7,6 +7,14 @@ project(pd-simpl)
 set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/${project_name})
 set(PD_FLOATSIZE64 "OFF")
 
+# If MAC OS, then add include_directories(/usr/local/include)
+
+# Add the path to the FFTW library directory
+if (APPLE)
+    include_directories(/usr/local/include)
+    link_directories(/usr/local/lib)
+endif()
+
 # Required packages
 add_subdirectory(Libraries/simpl)
 set_target_properties(simpl PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
