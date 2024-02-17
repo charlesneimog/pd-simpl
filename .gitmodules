@@ -1,3 +1,6 @@
-[submodule "simpl"]
-	path = simpl
+[submodule "Resources/pd.build"]
+	path = Resources/pd.build
+	url = https://github.com/charlesneimog/pd.build
+[submodule "Libraries/simpl"]
+	path = Libraries/simpl
 	url = https://github.com/charlesneimog/simpl
