@@ -8,7 +8,7 @@
 #X obj 83 17 loadbang;
 #X obj 15 115 s-peaks~;
 #X obj 15 161 s-partials;
-#X obj 15 213 t b a, f 17;
+#X obj 67 216 t b a, f 17;
 #N canvas 0 50 450 300 peaks 0;
 #X obj 65 70 s-get;
 #X obj 125 136 s-get;
@@ -42,8 +42,8 @@
 #X connect 3 1 1 0;
 #X connect 4 0 0 0;
 #X connect 6 0 5 0;
-#X restore 96 248 pd peaks;
-#X obj 15 285 s-create Frames;
+#X restore 148 251 pd peaks;
+#X obj 67 288 s-create Frames;
 #X msg 111 115 set loris;
 #X obj 15 422 outlet~;
 #X obj 264 96 switch~ 1024 1 1;
@@ -57,11 +57,10 @@
 #X connect 3 0 15 0;
 #X connect 3 0 9 0;
 #X connect 4 0 5 0;
-#X connect 5 0 6 0;
+#X connect 5 0 13 0;
 #X connect 6 0 8 0;
 #X connect 6 1 7 0;
 #X connect 7 0 8 0;
-#X connect 8 0 13 0;
 #X connect 9 0 5 0;
 #X connect 12 0 14 0;
 #X connect 13 0 10 0;

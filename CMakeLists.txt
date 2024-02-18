@@ -28,6 +28,9 @@ add_pd_external(pd-simpl simpl
     ${CMAKE_SOURCE_DIR}/Sources/s-create.cpp
 )
 
+# Copy all dynamic libraries for local dir
+local_deps(simpl)
+
 # Add include directories for pd-simpl project
 target_include_directories(pd-simpl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/simpl)
 target_include_directories(pd-simpl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/mq)

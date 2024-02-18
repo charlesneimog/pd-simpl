@@ -1,6 +1,7 @@
 *.so
 *.pd_linux
 *.l_amd64
+amd64/
 *.o
 .cache/*
 build/

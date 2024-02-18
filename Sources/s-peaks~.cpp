@@ -76,7 +76,8 @@ static t_int *PeaksAudioPerform(t_int *w) {
     }
 
     std::vector<simpl::s_sample> audio(audioIn, audioIn + n);
-
+    x->PeakDetection->frame_size(n);
+    x->PeakDetection->hop_size(n);
     x->PeakDetection->max_peaks(x->maxPeaks);
     x->Frames = x->PeakDetection->find_peaks(n, audio.data());
     t_atom args[1];
@@ -91,7 +92,6 @@ static void PeaksAddDsp(t_Peaks *x, t_signal **sp) {
         pd_error(NULL, "[peaks~] You need to choose a Peak Detection method!");
         return;
     }
-    x->PeakDetection->frame_size(sp[0]->s_n);
     dsp_add(PeaksAudioPerform, 3, x, sp[0]->s_vec, (t_int)sp[0]->s_n);
 }
 

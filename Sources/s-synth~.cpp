@@ -17,6 +17,7 @@ typedef struct _Synth { // It seems that all the objects are some kind of
     t_sample xSample; // audio to fe used in CLASSMAINSIGIN
 
     // Peak Detection Parameters
+    t_int SynthMethodSet;
     t_int FrameSize;
     t_int HopSize;
     simpl::Synthesis *Synthesis;
@@ -48,11 +49,22 @@ static void SetSynthesisMethod(t_Synth *x, t_symbol *s, t_symbol *argv) {
         return;
     }
     x->Synthesis->sampling_rate(sys_getsr());
+    x->SynthMethodSet = 1;
 }
 
 // ==============================================
+// static void AddFrames(t_Synth *x, t_gpointer *p) {
+//     simpl::Frames Frames = *(simpl::Frames *)p;
+//     for (int i = 0; i < Frames.size(); i++) {
+//         simpl::Frame *Frame = Frames[i];
+//         x->Frames.push_back(Frame);
+//     }
+//     x->process = 1;
+//     return;
+// }
 static void AddFrames(t_Synth *x, t_gpointer *p) {
-    simpl::Frames Frames = *(simpl::Frames *)p;
+    simpl::Frames &Frames =
+        *(simpl::Frames *)p; // Get a reference to the Frames object
     for (int i = 0; i < Frames.size(); i++) {
         simpl::Frame *Frame = Frames[i];
         x->Frames.push_back(Frame);
@@ -66,33 +78,23 @@ static t_int *SynthAudioPerform(t_int *w) {
     t_sample *out = (t_sample *)(w[2]);
     int n = (int)(w[3]);
 
-    if (!x->process) {
-        for (int i = 0; i < n; i++) {
-            out[i] = 0;
-        }
-    }
-    if (x->Synthesis == nullptr) {
-        post("[s-synth~] You need to choose a Synthesis method");
-        for (int i = 0; i < n; i++) {
-            out[i] = 0;
-        }
+    if (!x->SynthMethodSet) {
         return (w + 4);
     }
 
-    simpl::Frames Frames;
-    Frames = x->Frames;
-
+    x->Synthesis->hop_size(x->FrameSize);
     x->Synthesis->frame_size(x->FrameSize);
 
-    for (int i = 0; i < Frames.size(); i++) {
-        for (int j = 0; j < x->Synthesis->hop_size(); j++) {
-            if (i * x->Synthesis->hop_size() + j > n) {
-                pd_error(NULL, "[s-synth~] The output buffer is too small");
-                return (w + 4);
-            }
-            // out[i * x->Synthesis->hop_size() + j] = Frames[i]->synth()[j];
-        }
+    simpl::Frames Frames;
+    Frames = x->Frames; // frame size will always be 1
+    Frames = x->Synthesis->synth(Frames);
+    int i, j;
+    for (j = 0; j < x->Synthesis->hop_size(); j++) {
+        double sample = Frames[0]->synth()[j];
+        // out[x->FrameSize + j] = sample;
     }
+
+    post("Last number is %f", i * x->FrameSize + j);
     x->Frames.clear();
 
     return (w + 4);
@@ -105,11 +107,11 @@ static void SynthAddDsp(t_Synth *x, t_signal **sp) {
 }
 
 // ==============================================
-static void *NewSynth(t_floatarg f) {
+static void *NewSynth(t_float f) {
     t_Synth *x = (t_Synth *)pd_new(Synth);
     x->sigOut = outlet_new(&x->xObj, &s_signal);
     x->Synthesis = nullptr;
-    x->process = 0;
+    x->SynthMethodSet = 0; // pleonasmo
     return x;
 }
 

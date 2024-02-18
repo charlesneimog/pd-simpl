@@ -1,11 +1,10 @@
 #include "pd-simpl.hpp"
 
-t_class *simpl_class;
-
-// ==============================================
-typedef struct _simpl { // It seems that all the objects are some kind of class.
-    t_object xObj;      // convensao no puredata source code
-} t_simpl;
+// // ==============================================
+// typedef struct _simpl { // It seems that all the objects are some kind of
+// class.
+//     t_object xObj;      // convensao no puredata source code
+// } t_simpl;
 
 // // ==============================================
 // static void ThreadAudioProcessor(t_simpl *x) {
@@ -82,13 +81,6 @@ typedef struct _simpl { // It seems that all the objects are some kind of class.
 //             SIMPL_SIGTOTAL(sp[0]));
 // }
 
-// ==============================================
-static void *New(void) {
-    t_simpl *x = (t_simpl *)pd_new(simpl_class);
-    return x;
-}
-
-// ==============================================
 #if defined(_LANGUAGE_C_PLUS_PLUS) || defined(__cplusplus)
 extern "C" {
 void simpl_setup(void);
@@ -111,16 +103,9 @@ void simpl_setup(void) {
     post("[simpl] simpl version %d.%d.%d", 0, 0, 1);
     post("");
 
-    simpl_class = class_new(gensym("simpl"), (t_newmethod)New, NULL,
-                            sizeof(t_simpl), CLASS_NOINLET, A_GIMME, 0);
-
     s_peaks_tilde_setup();
     s_partials_setup();
     s_synth_tilde_setup();
-
-    // Get
     s_get_setup();
-
-    // Create
     s_create_setup();
 }
