@@ -18,15 +18,13 @@ else()
     target_compile_options(simpl PRIVATE -w)
 endif()
 
+# Get all cpp files inside ${CMAKE_SOURCE_DIR}/Sources/ and add them to the project
+set(SOURCES_DIR ${CMAKE_SOURCE_DIR}/Sources)
+file(GLOB SOURCES ${SOURCES_DIR}/*.cpp)
+
+
 # Add one or several externals (5):   
-add_pd_external(pd-simpl simpl 
-    ${CMAKE_SOURCE_DIR}/Sources/pd-simpl.cpp
-    ${CMAKE_SOURCE_DIR}/Sources/s-peaks~.cpp
-    ${CMAKE_SOURCE_DIR}/Sources/s-partials.cpp
-    ${CMAKE_SOURCE_DIR}/Sources/s-synth~.cpp
-    ${CMAKE_SOURCE_DIR}/Sources/s-get.cpp
-    ${CMAKE_SOURCE_DIR}/Sources/s-create.cpp
-)
+add_pd_external(pd-simpl simpl ${SOURCES})
 
 # Copy all dynamic libraries for local dir
 local_deps(simpl)

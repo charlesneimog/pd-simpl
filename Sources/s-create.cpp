@@ -20,10 +20,8 @@ typedef struct _Screate {
 
 // ─────────────────────────────────────
 static void CreatePeak(Screate *x, t_symbol *s, int argc, t_atom *argv) {
-    if (x->Frame == NULL) {
-        x->Frame = new simpl::Frame(); // TODO: Need to delete
-        x->Frame->num_partials(x->maxP);
-    }
+    x->Frame = new simpl::Frame(); // TODO: Need to delete
+    x->Frame->num_partials(x->maxP);
 
     if (x->pAdded > x->maxP) {
         post("[s-create] The maximum number of partials is %d", x->maxP);
@@ -34,16 +32,15 @@ static void CreatePeak(Screate *x, t_symbol *s, int argc, t_atom *argv) {
     double amplitude = atom_getfloat(argv + 1);
     double phase = atom_getfloat(argv + 2);
     double bandwidth = atom_getfloat(argv + 3);
-    x->Frame->add_peak(amplitude, frequency, phase, bandwidth);
+    x->Frame->add_partial(amplitude, frequency, phase, bandwidth);
     x->pAdded += 1;
 }
 
 // ──────────────────────────────────────────
 static void AddFrame(Screate *x, t_gpointer *p) {
     if (x->Frames == NULL) {
-        x->Frames = new simpl::Frames();
+        x->Frames = new simpl::Frames(); // TODO: Need to Delete
     }
-
     simpl::Frame *Frame = (simpl::Frame *)p;
     x->Frames->push_back(Frame);
 }

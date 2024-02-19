@@ -9,9 +9,11 @@ typedef struct _Peaks { // It seems that all the objects are some kind of
     t_sample xSample; // audio to fe used in CLASSMAINSIGIN
 
     // multitreading
-    std::vector<simpl::s_sample> audioIn;
+    t_sample *audioIn;
     t_sample *previousOut;
     t_int warning;
+    t_int running;
+    t_int n;
 
     // Peak Detection Parameters
     t_int FrameSize;
@@ -20,7 +22,7 @@ typedef struct _Peaks { // It seems that all the objects are some kind of
     simpl::PeakDetection *PeakDetection;
 
     // Frames
-    simpl::Frames Frames;
+    simpl::Frames *Frames;
 
     // Outlet/Inlet
     t_outlet *sigOut;
@@ -65,33 +67,43 @@ static void SetPeakDetectionMethod(t_Peaks *x, t_symbol *s) {
 }
 
 // ==============================================
+static void ThreadAudioProcessor(t_Peaks *x) {
+    x->running = 1;
+    simpl::Frames Frames =
+        x->PeakDetection->find_peaks(x->n, (double *)x->audioIn);
+    t_atom args[1];
+    SETPOINTER(&args[0], (t_gpointer *)&Frames);
+    outlet_anything(x->sigOut, gensym("Frames"), 1, args);
+    x->running = 0;
+}
+
+// ==============================================
 static t_int *PeaksAudioPerform(t_int *w) {
     t_Peaks *x = (t_Peaks *)(w[1]);
     t_sample *audioIn = (t_sample *)(w[2]);
     int n = (int)(w[3]);
+    x->audioIn = audioIn;
+    x->n = n;
 
-    if (n < 128 && !x->warning) {
-        pd_error(NULL,
-                 "Frame size is very small, use [switch~ 2048] to change it!");
-    }
+    std::thread audioThread(ThreadAudioProcessor, x);
+    audioThread.detach();
 
-    std::vector<simpl::s_sample> audio(audioIn, audioIn + n);
-    x->PeakDetection->frame_size(n);
-    x->PeakDetection->hop_size(n);
-    x->PeakDetection->max_peaks(x->maxPeaks);
-    x->Frames = x->PeakDetection->find_peaks(n, audio.data());
-    t_atom args[1];
-    SETPOINTER(&args[0], (t_gpointer *)&x->Frames);
-    outlet_anything(x->sigOut, gensym("Frames"), 1, args);
     return (w + 4);
 }
 
 // ==============================================
 static void PeaksAddDsp(t_Peaks *x, t_signal **sp) {
+    if (sp[0]->s_n < 512) {
+        pd_error(NULL, "[peaks~] The block size must be at least 512 samples");
+        dsp_add_zero(sp[0]->s_vec, sp[0]->s_n);
+        return;
+    }
     if (x->PeakDetection == NULL) {
+        dsp_add_zero(sp[0]->s_vec, sp[0]->s_n);
         pd_error(NULL, "[peaks~] You need to choose a Peak Detection method!");
         return;
     }
+    x->PeakDetection->frame_size(sp[0]->s_n);
     dsp_add(PeaksAudioPerform, 3, x, sp[0]->s_vec, (t_int)sp[0]->s_n);
 }
 

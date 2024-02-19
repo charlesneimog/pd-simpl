@@ -13,6 +13,7 @@
 void s_peaks_tilde_setup();
 void s_partials_setup();
 void s_synth_tilde_setup();
+void s_test_tilde_setup();
 
 // ╭─────────────────────────────────────╮
 // │                 Get                 │

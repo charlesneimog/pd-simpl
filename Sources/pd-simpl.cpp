@@ -106,6 +106,7 @@ void simpl_setup(void) {
     s_peaks_tilde_setup();
     s_partials_setup();
     s_synth_tilde_setup();
+    // s_test_tilde_setup();
     s_get_setup();
     s_create_setup();
 }

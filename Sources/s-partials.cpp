@@ -14,6 +14,7 @@ typedef struct _PartialTracking { // It seems that all the objects are some kind
     t_int FrameSize;
     t_int HopSize;
     t_int maxPeaks;
+    t_int running;
 
     simpl::PartialTracking *PartialTracking;
 
@@ -29,6 +30,15 @@ typedef struct _PartialTracking { // It seems that all the objects are some kind
 } t_PartialTracking;
 
 // ==============================================
+static void DetachedPartials(t_PartialTracking *x) {
+    x->running = 1;
+    simpl::Frames Frames;
+    Frames = x->PartialTracking->find_partials(x->Frames);
+    post("Partials Peaks n is %d", Frames[0]->num_partials());
+    // x->Frames = &Frames;
+    // x->running = 0;
+}
+// ==============================================
 static void ExecutePartialTracking(t_PartialTracking *x, t_gpointer *p) {
     if (x->PartialTracking == NULL) {
         pd_error(NULL,
@@ -36,13 +46,16 @@ static void ExecutePartialTracking(t_PartialTracking *x, t_gpointer *p) {
                  "method");
         return;
     }
+    simpl::Frames Frames = *(simpl::Frames *)p;
+    x->Frames = Frames;
     // p is a simpl::Frames, get it again
-    simpl::Frames frames = *(simpl::Frames *)p;
-    x->Frames = x->PartialTracking->find_partials(frames);
 
-    t_atom args[1];
-    SETPOINTER(&args[0], (t_gpointer *)&frames);
-    outlet_anything(x->sigOut, gensym("Frames"), 1, args);
+    std::thread partialDetector(DetachedPartials, x);
+    partialDetector.detach();
+    //
+    // t_atom args[1];
+    // SETPOINTER(&args[0], (t_gpointer *)&x->Frames);
+    // outlet_anything(x->sigOut, gensym("Frames"), 1, args);
 }
 
 // ==============================================
