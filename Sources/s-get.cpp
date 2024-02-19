@@ -1,5 +1,4 @@
 #include "pd-simpl.hpp"
-#include <m_pd.h>
 
 static t_class *S_get;
 
@@ -13,35 +12,31 @@ typedef struct _Sget {
 
 // ─────────────────────────────────────
 static void GetFrames(Sget *x, t_gpointer *p) {
-    simpl::Frames Frames = *(simpl::Frames *)p;
+    simpl::Frames *framesPtr = (simpl::Frames *)(p);
+    simpl::Frames Frames = *framesPtr;
     for (int i = 0; i < Frames.size(); i++) {
         simpl::Frame *Frame = Frames[i];
         t_atom args[1];
         SETPOINTER(&args[0], (t_gpointer *)Frame);
         outlet_anything(x->out, gensym("Frame"), 1, args);
     }
-
     return;
 }
 
 // ─────────────────────────────────────
 static void GetPeaks(Sget *x, t_gpointer *p) {
-    simpl::Frame *Frame = (simpl::Frame *)p;
-    if (Frame == NULL) {
-        return;
-    }
-    // simpl::Peak *Peak = Frame->partial(0);
-
+    simpl::Frame *Frame = (simpl::Frame *)(p);
     for (int i = 0; i < Frame->num_partials(); i++) {
         simpl::Peak *Peak = Frame->partial(i);
-
-        if (Peak != NULL) {
+        if (Peak != nullptr) {
             t_atom args[4];
-            SETFLOAT(&args[0], Peak->frequency);
-            SETFLOAT(&args[1], Peak->amplitude);
-            SETFLOAT(&args[2], Peak->phase);
-            SETFLOAT(&args[3], Peak->bandwidth);
-            outlet_list(x->out, &s_list, 4, args);
+            if (Peak->frequency != 0 && Peak->amplitude != 0) {
+                SETFLOAT(&args[0], Peak->frequency);
+                SETFLOAT(&args[1], Peak->amplitude);
+                SETFLOAT(&args[2], Peak->phase);
+                SETFLOAT(&args[3], Peak->bandwidth);
+                outlet_list(x->out, &s_list, 4, args);
+            }
         }
     }
 

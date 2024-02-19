@@ -6,26 +6,13 @@ static t_class *PartialTracking;
 typedef struct _PartialTracking { // It seems that all the objects are some kind
     t_object xObj;
     t_sample xSample; // audio to fe used in CLASSMAINSIGIN
-
-    // multitreading
     std::vector<simpl::s_sample> audioIn;
-
-    // Peak Detection Parameters
-    t_int FrameSize;
-    t_int HopSize;
+    t_int hopSize;
     t_int maxPeaks;
     t_int running;
-
-    simpl::PartialTracking *PartialTracking;
-
-    // Frames
+    simpl::PartialTracking *PT;
     simpl::Frames Frames;
-
-    // Outlet/Inlet
     t_outlet *sigOut;
-
-    // Partial Tracking
-    simpl::Peaks *pPeaks; // previous List Peak
 
 } t_PartialTracking;
 
@@ -33,49 +20,44 @@ typedef struct _PartialTracking { // It seems that all the objects are some kind
 static void DetachedPartials(t_PartialTracking *x) {
     x->running = 1;
     simpl::Frames Frames;
-    Frames = x->PartialTracking->find_partials(x->Frames);
-    post("Partials Peaks n is %d", Frames[0]->num_partials());
-    // x->Frames = &Frames;
-    // x->running = 0;
+    Frames = x->PT->find_partials(x->Frames);
+    t_atom args[1];
+    SETPOINTER(&args[0], (t_gpointer *)&Frames);
+    outlet_anything(x->sigOut, gensym("Frames"), 1, args);
 }
+
 // ==============================================
 static void ExecutePartialTracking(t_PartialTracking *x, t_gpointer *p) {
-    if (x->PartialTracking == NULL) {
-        pd_error(NULL,
-                 "[partialtracking] You need to choose a Partial Tracking "
-                 "method");
+    if (x->PT == NULL) {
+        pd_error(NULL, "[s-partials] You need to choose a Partial Tracking "
+                       "method");
         return;
     }
     simpl::Frames Frames = *(simpl::Frames *)p;
     x->Frames = Frames;
-    // p is a simpl::Frames, get it again
 
     std::thread partialDetector(DetachedPartials, x);
     partialDetector.detach();
-    //
-    // t_atom args[1];
-    // SETPOINTER(&args[0], (t_gpointer *)&x->Frames);
-    // outlet_anything(x->sigOut, gensym("Frames"), 1, args);
 }
 
 // ==============================================
 static void SetPartialTrackingMethod(t_PartialTracking *x, t_symbol *s) {
     std::string method = s->s_name;
     if (method == "loris") {
-        x->PartialTracking = new simpl::LorisPartialTracking();
+        x->PT = new simpl::LorisPartialTracking();
     } else if (method == "sms") {
-        x->PartialTracking = new simpl::SMSPartialTracking();
-        ((simpl::SMSPartialTracking *)x->PartialTracking)->realtime(true);
+        x->PT = new simpl::SMSPartialTracking();
+        ((simpl::SMSPartialTracking *)x->PT)->realtime(true);
     } else if (method == "mq") {
-        x->PartialTracking = new simpl::MQPartialTracking();
+        x->PT = new simpl::MQPartialTracking();
     } else if (method == "snd") {
-        x->PartialTracking = new simpl::SndObjPartialTracking();
+        x->PT = new simpl::SndObjPartialTracking();
     } else {
         pd_error(NULL, "[peaks~] Unknown method");
         return;
     }
-    x->PartialTracking->sampling_rate(sys_getsr());
-    x->PartialTracking->max_partials(x->maxPeaks);
+    x->PT->sampling_rate(sys_getsr());
+    x->PT->max_partials(x->maxPeaks);
 }
 
 // ==============================================
@@ -83,7 +65,7 @@ static void *NewPartialTracking(void) {
 
     t_PartialTracking *x = (t_PartialTracking *)pd_new(PartialTracking);
     x->sigOut = outlet_new(&x->xObj, &s_anything);
-    x->HopSize = -1;
+    x->hopSize = -1;
     x->maxPeaks = 100;
 
     return x;
