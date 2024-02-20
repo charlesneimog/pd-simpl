@@ -43,6 +43,8 @@ jobs:
         name: "Install mingw deps"
         uses: msys2/setup-msys2@v2
         with:
+          msystem: mingw64
+          platform: x64
           install: make autoconf automake libtool mingw-w64-x86_64-gcc cmake mingw-w64-x86_64-fftw mingw-w64-x86_64-gsl
           update: false
       - name: Install PureData
