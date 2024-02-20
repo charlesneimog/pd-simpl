@@ -5,6 +5,8 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/Resources/pd.build/pd.cmake)
 project(pd-simpl)
 
 set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/${project_name})
+
+
 set(PD_FLOATSIZE64 "OFF")
 
 # Required packages
@@ -22,7 +24,6 @@ endif()
 set(SOURCES_DIR ${CMAKE_SOURCE_DIR}/Sources)
 file(GLOB SOURCES ${SOURCES_DIR}/*.cpp)
 
-
 # Add one or several externals (5):   
 add_pd_external(pd-simpl simpl ${SOURCES})
 
@@ -35,5 +36,10 @@ target_include_directories(pd-simpl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries
 target_include_directories(pd-simpl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/sms)
 target_include_directories(pd-simpl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/loris)
 target_include_directories(pd-simpl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/sndobj)
+
+if(APPLE)
+    set_target_properties(pd-simpl PROPERTIES CXX_STANDARD 11)
+endif()
+
 
 target_link_libraries(pd-simpl PRIVATE simpl)
