@@ -1,5 +1,4 @@
 #include "pd-simpl.hpp"
-#include <m_pd.h>
 
 static t_class *S_create;
 
@@ -7,69 +6,60 @@ static t_class *S_create;
 typedef struct _Screate {
     t_object xObj;
 
-    std::string createWhat;
-    simpl::Frame *Frame;
-    simpl::Frames *Frames;
+    t_pdsimpl *Simpl;
+    float freq;
+    float amp;
+    float phase;
+    float bandwidth;
 
-    t_int maxP;
-    t_int pAdded;
+    t_inlet *f;
+    t_inlet *a;
+    t_inlet *p;
+    t_inlet *b;
 
     t_outlet *out;
 
 } Screate;
 
 // ─────────────────────────────────────
-static void CreatePeak(Screate *x, t_symbol *s, int argc, t_atom *argv) {
-    x->Frame = new simpl::Frame(); // TODO: Need to delete
-    x->Frame->num_partials(x->maxP);
+static void newF(Screate *x, t_floatarg f) { x->freq = f; }
+static void newA(Screate *x, t_floatarg f) { x->amp = f; }
+static void newP(Screate *x, t_floatarg f) { x->phase = f; }
+static void newB(Screate *x, t_floatarg f) { x->bandwidth = f; }
 
-    if (x->pAdded > x->maxP) {
-        post("[s-create] The maximum number of partials is %d", x->maxP);
-        return;
-    }
-
-    double frequency = atom_getfloat(argv);
-    double amplitude = atom_getfloat(argv + 1);
-    double phase = atom_getfloat(argv + 2);
-    double bandwidth = atom_getfloat(argv + 3);
-    x->Frame->add_partial(amplitude, frequency, phase, bandwidth);
-    x->pAdded += 1;
-}
-
-// ──────────────────────────────────────────
-static void AddFrame(Screate *x, t_gpointer *p) {
-    if (x->Frames == NULL) {
-        x->Frames = new simpl::Frames(); // TODO: Need to Delete
-    }
-    simpl::Frame *Frame = (simpl::Frame *)p;
-    x->Frames->push_back(Frame);
-}
 // ─────────────────────────────────────
-static void Output(Screate *x, t_symbol *s, int argc, t_atom *argv) {
-    t_atom args[1];
+static void Modify(Screate *x, t_gpointer *p) {
+    t_pdsimpl *Simpl = (t_pdsimpl *)p;
+    int sFrames = Simpl->Frames->size() - 1;
+    int fIndex = Simpl->frameIndex;
+    int pLength = Simpl->Frames->at(fIndex)->num_partials();
 
-    if (x->createWhat == "Frame") {
-        SETPOINTER(&args[0], (t_gpointer *)&x->Frame);
-        outlet_anything(x->out, gensym("Frame"), 1, args);
-        x->Frame = new simpl::Frame(); // TODO: Need to delete
-        x->Frame->num_partials(x->maxP);
-        x->pAdded = 0;
+    if (Simpl->frameIndex >= 0 && Simpl->frameIndex < Simpl->Frames->size()) {
+        simpl::Frame *Frame = Simpl->Frames->at(Simpl->frameIndex);
+        simpl::Peak *Peak = Frame->partial(Simpl->peakIndex);
+        Peak->frequency = x->freq;
+        Peak->amplitude = x->amp;
+        Peak->phase = x->phase;
+        Peak->bandwidth = x->bandwidth;
+        Simpl->PT->update_partials(Frame);
+        if (sFrames == fIndex && (pLength - 1) == Simpl->peakIndex) {
+            t_atom args[1];
+            SETPOINTER(&args[0], (t_gpointer *)Simpl);
+            outlet_anything(x->out, gensym("simplObj"), 1, args);
+        }
     }
 
-    if (x->createWhat == "Frames") {
-        SETPOINTER(&args[0], (t_gpointer *)x->Frames);
-        outlet_anything(x->out, gensym("Frames"), 1, args);
-        x->Frames = NULL;
-    }
+    // NOTE: So output caso o PeakIndex for igual ao numeros de parciais
 }
 
 // ─────────────────────────────────────
 static void *New_Screate(t_symbol *s, int argc, t_atom *argv) {
-    std::string createWhat = atom_getsymbol(argv)->s_name;
     Screate *x = (Screate *)pd_new(S_create);
-    x->createWhat = createWhat;
+    x->f = inlet_new(&x->xObj, &x->xObj.ob_pd, &s_float, gensym("_freq"));
+    x->a = inlet_new(&x->xObj, &x->xObj.ob_pd, &s_float, gensym("_amp"));
+    x->p = inlet_new(&x->xObj, &x->xObj.ob_pd, &s_float, gensym("_phase"));
+    x->b = inlet_new(&x->xObj, &x->xObj.ob_pd, &s_float, gensym("_bandwidth"));
     x->out = outlet_new(&x->xObj, &s_anything);
-    x->maxP = 128;
 
     return x;
 }
@@ -79,9 +69,11 @@ void s_create_setup(void) {
     S_create = class_new(gensym("s-create"), (t_newmethod)New_Screate, NULL,
                          sizeof(Screate), CLASS_DEFAULT, A_GIMME, 0);
 
-    class_addlist(S_create, CreatePeak);
-    class_addbang(S_create, Output);
-    class_addmethod(S_create, (t_method)AddFrame, gensym("Frame"), A_POINTER,
+    class_addmethod(S_create, (t_method)newF, gensym("_freq"), A_FLOAT, 0);
+    class_addmethod(S_create, (t_method)newA, gensym("_amp"), A_FLOAT, 0);
+    class_addmethod(S_create, (t_method)newP, gensym("_phase"), A_FLOAT, 0);
+    class_addmethod(S_create, (t_method)newB, gensym("_bandwidth"), A_FLOAT, 0);
+    class_addmethod(S_create, (t_method)Modify, gensym("simplObj"), A_POINTER,
                     0);
 
     // TODO: set method for max peaks

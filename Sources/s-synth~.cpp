@@ -1,4 +1,3 @@
-
 #include "pd-simpl.hpp"
 
 static t_class *Synth;
@@ -18,15 +17,27 @@ typedef struct _Synth { // It seems that all the objects are some kind of
 
     // Peak Detection Parameters
     t_int SynthMethodSet;
+    t_int SynthBlockSize;
     t_int FrameSize;
     t_int HopSize;
     t_int running;
+    t_int block;
+    t_int blockIndex;
     simpl::Synthesis *Synthesis;
 
     // Frames
     t_int accumFrames;
     simpl::Frames *PreviousFrames;
     simpl::Frames Frames;
+    t_pdsimpl *Simpl;
+
+    // Audio
+    t_sample *altOut1;
+    t_sample *altOut2;
+    int blockPosition;
+    int whichBlock;
+    int frameIndex;
+    int perform;
 
     // Outlet/Inlet
     t_outlet *sigOut;
@@ -54,27 +65,52 @@ static void SetSynthesisMethod(t_Synth *x, t_symbol *s, t_symbol *argv) {
 }
 
 // ==============================================
-static void AddFrames(t_Synth *x, t_gpointer *p) {
-    simpl::Frames &Frames =
-        *(simpl::Frames *)p; // Get a reference to the Frames object
-    x->Frames = simpl::Frames();
-    for (int i = 0; i < Frames.size(); i++) {
-        simpl::Frame *Frame = Frames[i];
-        x->Frames.push_back(Frame);
+static void DetachedSynth(t_Synth *x) {
+    x->running = 1;
+    simpl::Frames *FramesPtr = new simpl::Frames;
+    FramesPtr = x->Simpl->Frames;
+    simpl::Frames Frames = *FramesPtr;
+    Frames = x->Synthesis->synth(Frames);
+
+    if (x->frameIndex) {
+        for (int i = 0; i < Frames.size(); i++) {
+            for (int j = 0; j < Frames[i]->synth_size(); j++) {
+                x->altOut1[i * Frames.size() + j] = Frames[i]->synth()[j];
+            }
+        }
+        x->frameIndex = 0;
+
+    } else {
+        for (int i = 0; i < Frames.size(); i++) {
+            for (int j = 0; j < Frames[i]->synth_size(); j++) {
+                x->altOut2[i * Frames.size() + j] = Frames[i]->synth()[j];
+            }
+        }
+        x->frameIndex = 1;
     }
-    x->process = 1;
+    x->running = 0;
+    x->perform = 1;
     return;
 }
 
 // ==============================================
-static void ThreadAudioProcessor(t_Synth *x) {
-    x->running = 1;
-    // x->Frames = x->Synthesis->synth(x->Frames);
-    // for (int j = 0; j < x->Synthesis->hop_size(); j++) {
-    //     x->previousOut[x->Synthesis->hop_size() + j] =
-    //     x->Frames[0]->synth()[j];
-    // }
-    x->running = 0;
+static void Synthesis(t_Synth *x, t_gpointer *p) {
+    if (x->Synthesis == nullptr) {
+        pd_error(0, "[s-synth~] No method set");
+        return;
+    }
+    if (x->running == 1) {
+        pd_error(0, "[s-synth~] Synthesis already running");
+        return;
+    }
+    t_pdsimpl *Simpl = (t_pdsimpl *)p;
+    x->Synthesis->reset();
+    x->Synthesis->frame_size(Simpl->analWindow);
+    x->Synthesis->hop_size(Simpl->hopSize);
+    x->Synthesis->max_partials(Simpl->maxP);
+    x->Simpl = Simpl;
+    std::thread t(DetachedSynth, x);
+    t.detach();
 }
 
 // ==============================================
@@ -82,43 +118,49 @@ static t_int *SynthAudioPerform(t_int *w) {
     t_Synth *x = (t_Synth *)(w[1]);
     t_sample *out = (t_sample *)(w[2]);
     int n = (int)(w[3]);
-
-    if (!x->SynthMethodSet || !x->process) {
-        while (n--)
-            *out++ = 0;
+    if (!x->perform) {
         return (w + 4);
     }
 
-    if (x->running) {
-        pd_error(NULL, "[s-synth~] previous block was not finished yet.");
-        while (n--)
-            *out++ = 0;
+    if (x->Simpl == nullptr) {
         return (w + 4);
     }
 
-    x->Synthesis->hop_size(x->FrameSize);
-    x->Synthesis->frame_size(x->FrameSize);
-    std::thread audioThread(ThreadAudioProcessor, x);
-    audioThread.detach();
+    int start_index;
+    int end_index;
+    start_index = x->blockPosition * n;
+    end_index = start_index + n;
+    int index;
+    for (int i = start_index; i < end_index; i++) {
+        index = i % n;
+        if (x->whichBlock) {
+            out[index] = x->altOut1[i];
+        } else {
+            out[index] = x->altOut2[i];
+        }
+    }
 
-    while (n--) // Silencio
-        *out++ = 0;
+    x->blockPosition += 1;
+
+    if (x->blockPosition * n >= 4096) {
+        x->blockPosition = 0;
+        if (x->whichBlock) {
+            x->whichBlock = 0;
+        } else {
+            x->whichBlock = 1;
+        }
+    }
 
     return (w + 4);
 }
 
 // ==============================================
 static void SynthAddDsp(t_Synth *x, t_signal **sp) {
+    x->blockPosition = 0;
+    x->whichBlock = 0;
+    x->perform = 1;
     x->FrameSize = sp[0]->s_n;
-    if (sp[0]->s_n < 512) {
-        pd_error(NULL, "[peaks~] The block size must be at least 512 samples");
-        return;
-    }
     int n = sp[0]->s_n;
-    x->previousOut = (t_sample *)getbytes(sizeof(t_sample) * sp[0]->s_n);
-    while (n--)
-        x->previousOut[n] = 0;
-
     dsp_add(SynthAudioPerform, 3, x, sp[0]->s_vec, sp[0]->s_n);
 }
 
@@ -128,6 +170,9 @@ static void *NewSynth(t_float f) {
     x->sigOut = outlet_new(&x->xObj, &s_signal);
     x->Synthesis = nullptr;
     x->SynthMethodSet = 0; // pleonasmo
+    x->frameIndex = 0;
+    x->altOut1 = new t_sample[4096];
+    x->altOut2 = new t_sample[4096];
     return x;
 }
 
@@ -136,7 +181,8 @@ void s_synth_tilde_setup(void) {
     Synth = class_new(gensym("s-synth~"), (t_newmethod)NewSynth, NULL,
                       sizeof(t_Synth), CLASS_DEFAULT, A_DEFFLOAT, 0);
     class_addmethod(Synth, (t_method)SynthAddDsp, gensym("dsp"), A_CANT, 0);
-    class_addmethod(Synth, (t_method)AddFrames, gensym("Frames"), A_POINTER, 0);
+    class_addmethod(Synth, (t_method)Synthesis, gensym("simplObj"), A_POINTER,
+                    0);
     class_addmethod(Synth, (t_method)SetSynthesisMethod, gensym("set"),
                     A_SYMBOL, 0);
 }

@@ -12,6 +12,7 @@ typedef struct _PartialTracking { // It seems that all the objects are some kind
     t_int running;
     simpl::PartialTracking *PT;
     simpl::Frames Frames;
+    t_pdsimpl *Simpl;
     t_outlet *sigOut;
 
 } t_PartialTracking;
@@ -19,11 +20,20 @@ typedef struct _PartialTracking { // It seems that all the objects are some kind
 // ==============================================
 static void DetachedPartials(t_PartialTracking *x) {
     x->running = 1;
-    simpl::Frames Frames;
-    Frames = x->PT->find_partials(x->Frames);
+    simpl::Frames *Frames;
+    simpl::Frames pdFrames;
+    pdFrames = *(x->Simpl->Frames);
+    simpl::Frames *FramesPtr = new simpl::Frames;
+    *FramesPtr = x->PT->find_partials(pdFrames);
+
+    delete x->Simpl->Frames;
+    x->Simpl->Frames = FramesPtr;
+    x->Simpl->ptDetection = 1;
+    x->Simpl->PT = x->PT;
+
     t_atom args[1];
-    SETPOINTER(&args[0], (t_gpointer *)&Frames);
-    outlet_anything(x->sigOut, gensym("Frames"), 1, args);
+    SETPOINTER(&args[0], (t_gpointer *)x->Simpl);
+    outlet_anything(x->sigOut, gensym("simplObj"), 1, args);
 }
 
 // ==============================================
@@ -33,8 +43,8 @@ static void ExecutePartialTracking(t_PartialTracking *x, t_gpointer *p) {
                        "method");
         return;
     }
-    simpl::Frames Frames = *(simpl::Frames *)p;
-    x->Frames = Frames;
+    t_pdsimpl *Simpl = (t_pdsimpl *)p;
+    x->Simpl = Simpl;
 
     std::thread partialDetector(DetachedPartials, x);
     partialDetector.detach();
@@ -62,7 +72,6 @@ static void SetPartialTrackingMethod(t_PartialTracking *x, t_symbol *s) {
 
 // ==============================================
 static void *NewPartialTracking(void) {
-
     t_PartialTracking *x = (t_PartialTracking *)pd_new(PartialTracking);
     x->sigOut = outlet_new(&x->xObj, &s_anything);
     x->hopSize = -1;
@@ -81,5 +90,5 @@ void s_partials_setup(void) {
                     gensym("set"), A_SYMBOL, 0);
 
     class_addmethod(PartialTracking, (t_method)ExecutePartialTracking,
-                    gensym("Frames"), A_POINTER, 0);
+                    gensym("simplObj"), A_POINTER, 0);
 }

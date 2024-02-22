@@ -7,6 +7,25 @@
 
 #define SIMPL_SIGTOTAL(s) ((t_int)((s)->s_length * (s)->s_nchans))
 
+typedef struct _pdsimpl {
+    simpl::PeakDetection *PD;
+    simpl::PartialTracking *PT;
+    simpl::Synthesis *Synth;
+
+    simpl::Frames *Frames;
+    simpl::Frame *Frame;
+    int peakIndex;
+    int frameIndex;
+
+    int maxP;
+    int numP;
+    int hopSize;
+    int frameSize;
+    int analWindow;
+    int pdDetection;
+    int ptDetection;
+} t_pdsimpl;
+
 // ╭─────────────────────────────────────╮
 // │            Main Objects             │
 // ╰─────────────────────────────────────╯
