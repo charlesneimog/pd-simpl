@@ -10,7 +10,36 @@ set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/${project_name})
 
 set(PD_FLOATSIZE64 "OFF")
 
-# Required packages
+#╭──────────────────────────────────────╮
+#│              Static GSL              │
+#╰──────────────────────────────────────╯
+add_subdirectory(Libraries/agsl)
+set_target_properties(gsl PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_target_properties(gsl PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+#╭──────────────────────────────────────╮
+#│             Static FFTW3             │
+#╰──────────────────────────────────────╯
+cmake_policy(SET CMP0135 NEW)
+option(BUILD_SHARED_LIBS OFF)
+option(BUILD_TESTS OFF)
+option(DISABLE_FORTRAN ON)
+
+message(STATUS "Downloading FFTW3")
+file(DOWNLOAD https://www.fftw.org/fftw-3.3.10.tar.gz ${CMAKE_BINARY_DIR}/fftw-3.3.10.tar.gz)
+
+file(ARCHIVE_EXTRACT
+    INPUT ${CMAKE_BINARY_DIR}/fftw-3.3.10.tar.gz
+    DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/
+)
+
+add_subdirectory(Libraries/fftw-3.3.10)
+set_target_properties(fftw3 PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_target_properties(fftw3 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+#╭──────────────────────────────────────╮
+#│             Static Simpl             │
+#╰──────────────────────────────────────╯
 add_subdirectory(Libraries/simpl)
 set_target_properties(simpl PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_target_properties(simpl PROPERTIES POSITION_INDEPENDENT_CODE ON)

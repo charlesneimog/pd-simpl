@@ -1,8 +1,9 @@
 *.so
 *.pd_linux
 *.l_amd64
-amd64/
 *.o
+amd64/
+Libraries/fftw*
 .cache/*
 build/
 compile_commands.json
