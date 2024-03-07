@@ -114,18 +114,6 @@ static void SetMaxPartials(t_Peaks *x, t_float f) {
 }
 
 // ==============================================
-static void SetSilencePartial(t_Peaks *x, t_float low, t_float high) {
-    // silence the all frequencies between low and high
-    if (x->silenceIndex < MAX_SILENCED_PARTIALS) {
-        x->low[x->silenceIndex] = low;
-        x->high[x->silenceIndex] = high;
-        x->silenceIndex++;
-    } else {
-        pd_error(NULL, "[peaks~] Maximum number of silenced partials reached");
-    }
-}
-
-// ==============================================
 static void PartialTrackingProcessor(t_Peaks *x) {
     DEBUG_PRINT("[peaks~] Start PartialTracking");
     x->running = 1;
@@ -141,17 +129,6 @@ static void PartialTrackingProcessor(t_Peaks *x) {
 
     Anal->mtx.unlock();
 
-    if (x->silenceIndex != 0) {
-        for (int i = 0; i < Anal->Frame.num_partials(); i++) {
-            simpl::Peak *Peak = Anal->Frame.partial(i);
-            if (Peak != nullptr) {
-                if (Peak->frequency >= x->low[i] &&
-                    Peak->frequency <= x->high[i]) {
-                    Peak->amplitude = 0;
-                }
-            }
-        }
-    }
     x->done = 1;
     x->firstblock = 0;
     DEBUG_PRINT("[peaks~] Finished PartialTracking");
@@ -278,7 +255,6 @@ void s_peaks_tilde_setup(void) {
     PeaksDetection = class_new(gensym("s-peaks~"), (t_newmethod)NewPeaks, NULL,
                                sizeof(t_Peaks), CLASS_DEFAULT, A_GIMME, 0);
 
-    // ==============================================
     CLASS_MAINSIGNALIN(PeaksDetection, t_Peaks, xSample);
     class_addmethod(PeaksDetection, (t_method)PeaksAddDsp, gensym("dsp"),
                     A_CANT, 0);
@@ -286,8 +262,6 @@ void s_peaks_tilde_setup(void) {
                     A_FLOAT, 0);
     class_addmethod(PeaksDetection, (t_method)SetMaxPartials,
                     gensym("maxpartials"), A_FLOAT, 0);
-    class_addmethod(PeaksDetection, (t_method)SetSilencePartial,
-                    gensym("silence"), A_FLOAT, A_FLOAT, 0);
     class_addmethod(PeaksDetection, (t_method)SetMethods, gensym("set"),
                     A_SYMBOL, A_SYMBOL, 0);
 }

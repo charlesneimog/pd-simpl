@@ -117,6 +117,11 @@ void s_synth_tilde_setup();
 void s_test_tilde_setup();
 
 // ╭─────────────────────────────────────╮
+// │           Transformations           │
+// ╰─────────────────────────────────────╯
+void s_trans_setup(void);
+
+// ╭─────────────────────────────────────╮
 // │                Loris                │
 // ╰─────────────────────────────────────╯
 void s_loris_pt_tilde_setup(void);

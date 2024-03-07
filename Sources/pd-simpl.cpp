@@ -91,6 +91,7 @@ void simpl_setup(void) {
     s_synth_tilde_setup();
     s_get_setup();
     s_create_setup();
+    s_trans_setup();
 
     // // Loris
     // s_loris_pt_tilde_setup();

@@ -15,7 +15,6 @@ add_subdirectory(Libraries/simpl)
 set_target_properties(simpl PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_target_properties(simpl PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-
 # Suppress warnings for the simpl library
 if(MSVC)
     target_compile_options(simpl PRIVATE /W0)
