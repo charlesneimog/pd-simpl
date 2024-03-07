@@ -7,37 +7,26 @@ typedef struct _Synth { // It seems that all the objects are some kind of
                         // class.
     t_object xObj;
 
-    // multitreading
-    std::vector<simpl::s_sample> audioOut;
-    std::vector<simpl::s_sample> audioIn;
     t_sample *previousOut;
-    t_int warning;
-    t_int process;
     t_sample xSample; // audio to fe used in CLASSMAINSIGIN
 
     // Peak Detection Parameters
     t_int SynthMethodSet;
     t_int SynthBlockSize;
-    t_int FrameSize;
-    t_int HopSize;
     t_int running;
-    t_int block;
-    t_int blockIndex;
+    unsigned int synthDone;
     simpl::Synthesis *Synthesis;
 
     // Frames
-    t_int accumFrames;
-    simpl::Frames *PreviousFrames;
-    simpl::Frames Frames;
     t_pdsimpl *Simpl;
 
     // Audio
-    t_sample *altOut1;
-    t_sample *altOut2;
+    t_sample *out;
     int blockPosition;
     int whichBlock;
     int frameIndex;
     int perform;
+    int bufferFull;
 
     // Outlet/Inlet
     t_outlet *sigOut;
@@ -51,7 +40,7 @@ static void SetSynthesisMethod(t_Synth *x, t_symbol *s, t_symbol *argv) {
         x->Synthesis = new simpl::LorisSynthesis();
     } else if (method == "sms") {
         x->Synthesis = new simpl::SMSSynthesis();
-        ((simpl::SMSPeakDetection *)x->Synthesis)->realtime(true);
+        ((simpl::SMSPeakDetection *)x->Synthesis)->realtime(1);
     } else if (method == "mq") {
         x->Synthesis = new simpl::MQSynthesis();
     } else if (method == "snd") {
@@ -65,52 +54,29 @@ static void SetSynthesisMethod(t_Synth *x, t_symbol *s, t_symbol *argv) {
 }
 
 // ==============================================
-static void DetachedSynth(t_Synth *x) {
-    x->running = 1;
-    simpl::Frames *FramesPtr = new simpl::Frames;
-    FramesPtr = x->Simpl->Frames;
-    simpl::Frames Frames = *FramesPtr;
-    Frames = x->Synthesis->synth(Frames);
-
-    if (x->frameIndex) {
-        for (int i = 0; i < Frames.size(); i++) {
-            for (int j = 0; j < Frames[i]->synth_size(); j++) {
-                x->altOut1[i * Frames.size() + j] = Frames[i]->synth()[j];
-            }
-        }
-        x->frameIndex = 0;
-
-    } else {
-        for (int i = 0; i < Frames.size(); i++) {
-            for (int j = 0; j < Frames[i]->synth_size(); j++) {
-                x->altOut2[i * Frames.size() + j] = Frames[i]->synth()[j];
-            }
-        }
-        x->frameIndex = 1;
-    }
-    x->running = 0;
-    x->perform = 1;
-    return;
-}
-
-// ==============================================
 static void Synthesis(t_Synth *x, t_gpointer *p) {
-    if (x->Synthesis == nullptr) {
-        pd_error(0, "[s-synth~] No method set");
-        return;
+    DEBUG_PRINT("[synth~] Starting Synthesis");
+    AnalysisData *Anal = (AnalysisData *)p;
+
+    Anal->mtx.lock();
+    Anal->Synth();
+    int size = Anal->Frame.synth_size();
+    if (x->out == nullptr) {
+        x->out = new t_sample[size];
+        x->SynthBlockSize = size;
     }
-    if (x->running == 1) {
-        pd_error(0, "[s-synth~] Synthesis already running");
-        return;
+
+    for (unsigned int i = 0; i < size; i++) {
+        x->out[i] = Anal->Frame.synth()[i];
     }
-    t_pdsimpl *Simpl = (t_pdsimpl *)p;
-    x->Synthesis->reset();
-    x->Synthesis->frame_size(Simpl->analWindow);
-    x->Synthesis->hop_size(Simpl->hopSize);
-    x->Synthesis->max_partials(Simpl->maxP);
-    x->Simpl = Simpl;
-    std::thread t(DetachedSynth, x);
-    t.detach();
+
+    Anal->Frame.clear_peaks();
+    Anal->Frame.clear_partials();
+    Anal->Frame.clear_synth();
+    Anal->mtx.unlock();
+
+    x->synthDone = 1;
+    DEBUG_PRINT("[synth~] Finished Synthesis\n"); // NOTE: End of the cycle
 }
 
 // ==============================================
@@ -118,37 +84,25 @@ static t_int *SynthAudioPerform(t_int *w) {
     t_Synth *x = (t_Synth *)(w[1]);
     t_sample *out = (t_sample *)(w[2]);
     int n = (int)(w[3]);
-    if (!x->perform) {
-        return (w + 4);
-    }
+    int i;
 
-    if (x->Simpl == nullptr) {
-        return (w + 4);
-    }
-
-    int start_index;
-    int end_index;
-    start_index = x->blockPosition * n;
-    end_index = start_index + n;
-    int index;
-    for (int i = start_index; i < end_index; i++) {
-        index = i % n;
-        if (x->whichBlock) {
-            out[index] = x->altOut1[i];
-        } else {
-            out[index] = x->altOut2[i];
+    // error
+    if (!x->synthDone) {
+        for (i = 0; i < n; i++) {
+            out[i] = 0;
         }
+        return (w + 4);
     }
 
-    x->blockPosition += 1;
+    // copy synth for output
+    for (i = 0; i < n; i++) {
+        out[i] = x->out[x->blockPosition + i];
+        x->out[x->blockPosition + i] = 0;
+    }
 
-    if (x->blockPosition * n >= 4096) {
+    x->blockPosition = x->blockPosition + n;
+    if (x->blockPosition >= x->SynthBlockSize) {
         x->blockPosition = 0;
-        if (x->whichBlock) {
-            x->whichBlock = 0;
-        } else {
-            x->whichBlock = 1;
-        }
     }
 
     return (w + 4);
@@ -158,28 +112,23 @@ static t_int *SynthAudioPerform(t_int *w) {
 static void SynthAddDsp(t_Synth *x, t_signal **sp) {
     x->blockPosition = 0;
     x->whichBlock = 0;
-    x->perform = 1;
-    x->FrameSize = sp[0]->s_n;
-    int n = sp[0]->s_n;
     dsp_add(SynthAudioPerform, 3, x, sp[0]->s_vec, sp[0]->s_n);
+    DEBUG_PRINT("[synth~] Dsp routine added");
 }
 
 // ==============================================
-static void *NewSynth(t_float f) {
+static void *NewSynth(t_symbol *synth) {
     t_Synth *x = (t_Synth *)pd_new(Synth);
     x->sigOut = outlet_new(&x->xObj, &s_signal);
-    x->Synthesis = nullptr;
-    x->SynthMethodSet = 0; // pleonasmo
     x->frameIndex = 0;
-    x->altOut1 = new t_sample[4096];
-    x->altOut2 = new t_sample[4096];
+    DEBUG_PRINT("[synth~] New Synth");
     return x;
 }
 
 // ==============================================
 void s_synth_tilde_setup(void) {
     Synth = class_new(gensym("s-synth~"), (t_newmethod)NewSynth, NULL,
-                      sizeof(t_Synth), CLASS_DEFAULT, A_DEFFLOAT, 0);
+                      sizeof(t_Synth), CLASS_DEFAULT, A_DEFSYMBOL, 0);
     class_addmethod(Synth, (t_method)SynthAddDsp, gensym("dsp"), A_CANT, 0);
     class_addmethod(Synth, (t_method)Synthesis, gensym("simplObj"), A_POINTER,
                     0);

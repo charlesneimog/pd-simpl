@@ -4,14 +4,17 @@ set(CMAKE_SUPPRESS_REGENERATION true)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Resources/pd.build/pd.cmake)
 project(pd-simpl)
 
-set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/${project_name})
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG_MODE")
 
+set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/${project_name})
 
 set(PD_FLOATSIZE64 "OFF")
 
 # Required packages
 add_subdirectory(Libraries/simpl)
 set_target_properties(simpl PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_target_properties(simpl PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 
 # Suppress warnings for the simpl library
 if(MSVC)

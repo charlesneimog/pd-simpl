@@ -19,32 +19,22 @@ typedef struct _Sget {
 // ─────────────────────────────────────
 static void GetValues(Sget *x, t_gpointer *p) {
     t_pdsimpl *Simpl = (t_pdsimpl *)p;
-    int j = 0;
-
-    for (auto &Frame : *Simpl->Frames) {
-        for (int i = 0; i < Frame->num_partials(); i++) {
-            simpl::Peak *Peak = Frame->partial(i);
-            if (Peak != nullptr) {
-                t_atom args[4];
-                if (Peak->frequency != 0 && Peak->amplitude != 0) {
-                    if (x->PeaksOut) {
-                        Simpl->frameIndex = j;
-                        Simpl->peakIndex = i;
-                        outlet_float(x->b, Peak->bandwidth);
-                        outlet_float(x->p, Peak->phase);
-                        outlet_float(x->a, Peak->amplitude);
-                        outlet_float(x->f, Peak->frequency);
-                        t_atom args[1];
-                        SETPOINTER(&args[0], (t_gpointer *)Simpl);
-                        outlet_anything(x->simplOut, gensym("simplObj"), 1,
-                                        args);
-                    }
-                }
+    for (int i = 0; i < Simpl->Frame->num_partials(); i++) {
+        simpl::Peak *Peak = Simpl->Frame->partial(i);
+        if (Peak != nullptr) {
+            t_atom args[4];
+            if (x->PeaksOut) {
+                Simpl->peakIndex = i;
+                outlet_float(x->b, Peak->bandwidth);
+                outlet_float(x->p, Peak->phase);
+                outlet_float(x->a, Peak->amplitude);
+                outlet_float(x->f, Peak->frequency);
+                t_atom args[1];
+                SETPOINTER(&args[0], (t_gpointer *)Simpl);
+                outlet_anything(x->simplOut, gensym("simplObj"), 1, args);
             }
         }
-        j += 1;
     }
-    // outlet_bang(x->simplOut);
     return;
 }
 
