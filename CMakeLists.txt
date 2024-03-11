@@ -1,7 +1,7 @@
 # Define your standard CMake header (for example):
 cmake_minimum_required(VERSION 3.5)
-set(CMAKE_SUPPRESS_REGENERATION true)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Resources/pd.build/pd.cmake)
+
 project(pd-simpl)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG_MODE")
@@ -13,6 +13,7 @@ set(PD_FLOATSIZE64 "OFF")
 #╭──────────────────────────────────────╮
 #│              Static GSL              │
 #╰──────────────────────────────────────╯
+
 add_subdirectory(Libraries/agsl)
 set_target_properties(gsl PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_target_properties(gsl PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -20,13 +21,18 @@ set_target_properties(gsl PROPERTIES POSITION_INDEPENDENT_CODE ON)
 #╭──────────────────────────────────────╮
 #│             Static FFTW3             │
 #╰──────────────────────────────────────╯
+
 cmake_policy(SET CMP0135 NEW)
 option(BUILD_SHARED_LIBS OFF)
 option(BUILD_TESTS OFF)
 option(DISABLE_FORTRAN ON)
 
-message(STATUS "Downloading FFTW3")
-file(DOWNLOAD https://www.fftw.org/fftw-3.3.10.tar.gz ${CMAKE_BINARY_DIR}/fftw-3.3.10.tar.gz)
+# check if fftw-3.3.10.tar.gz has been downloaded
+set(FFTW3_FILE ${CMAKE_BINARY_DIR}/fftw-3.3.10.tar.gz)
+if (NOT EXISTS ${FFTW3_FILE})
+    message(STATUS "Downloading FFTW3")
+    file(DOWNLOAD https://www.fftw.org/fftw-3.3.10.tar.gz ${FFTW3_FILE})
+endif()
 
 file(ARCHIVE_EXTRACT
     INPUT ${CMAKE_BINARY_DIR}/fftw-3.3.10.tar.gz
@@ -51,26 +57,18 @@ else()
     target_compile_options(simpl PRIVATE -w)
 endif()
 
+#╭──────────────────────────────────────╮
+#│             Pd External              │
+#╰──────────────────────────────────────╯
 # Get all cpp files inside ${CMAKE_SOURCE_DIR}/Sources/ and add them to the project
-set(SOURCES_DIR ${CMAKE_SOURCE_DIR}/Sources)
-file(GLOB SOURCES ${SOURCES_DIR}/*.cpp)
+file(GLOB EXTERNAL_SOURCES "${CMAKE_SOURCE_DIR}/Sources/*.cpp")
+add_pd_external(pd-simpl simpl ${EXTERNAL_SOURCES})
 
-# Add one or several externals (5):   
-add_pd_external(pd-simpl simpl ${SOURCES})
+target_include_directories(pd-simpl PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/simpl")
+target_include_directories(pd-simpl PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/mq")
+target_include_directories(pd-simpl PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/sms")
+target_include_directories(pd-simpl PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/loris")
+target_include_directories(pd-simpl PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/sndobj")
 
-# Copy all dynamic libraries for local dir
-local_deps(simpl)
-
-# Add include directories for pd-simpl project
-target_include_directories(pd-simpl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/simpl)
-target_include_directories(pd-simpl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/mq)
-target_include_directories(pd-simpl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/sms)
-target_include_directories(pd-simpl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/loris)
-target_include_directories(pd-simpl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/sndobj)
-
-if(APPLE)
-    set_target_properties(pd-simpl PROPERTIES CXX_STANDARD 11)
-endif()
-
-
+set_target_properties(pd-simpl PROPERTIES CXX_STANDARD 11)
 target_link_libraries(pd-simpl PRIVATE simpl)

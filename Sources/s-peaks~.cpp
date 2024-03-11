@@ -1,51 +1,26 @@
 #include "pd-simpl.hpp"
-#include "synthesis.h"
 
 static t_class *PeaksDetection;
 #define MAX_SILENCED_PARTIALS 127
 
 // ==============================================
-typedef struct _Peaks { // It seems that all the objects are some kind of
-                        // class.
+typedef struct _Peaks {
     t_object xObj;
-    t_sample xSample; // audio to be used in CLASSMAINSIGIN
+    t_sample xSample;
+
+    // Multitreading
     bool detached;
-    // method
-
-    // silence partials
-    t_float low[MAX_SILENCED_PARTIALS];
-    t_float high[MAX_SILENCED_PARTIALS];
-    t_int silenceIndex;
-
-    // multitreading
     t_sample *audioIn;
-    t_sample *previousOut;
-    t_int warning;
     t_int running;
     t_int done;
     t_int firstblock;
-    t_pdsimpl *Simpl;
     t_int n;
-
-    // String
-    std::mutex mtx;
 
     // AnalysisData
     AnalysisData *RealTimeData;
-
-    // Peak Detection Parameters
     t_int FrameSize;
     t_int BufferSize;
     t_int maxPeaks;
-    simpl::PeakDetection *PeakDetection;
-    simpl::PartialTracking *PT;
-    simpl::Synthesis *Synth;
-    t_int PeakDefined;
-    t_int PartialTrackingDefined;
-
-    // Frames
-    simpl::Frames *Frames;
-    simpl::Frame *PdFrame;
 
     t_sample *in;
     t_int audioInBlockIndex;
@@ -53,21 +28,44 @@ typedef struct _Peaks { // It seems that all the objects are some kind of
     // Outlet/Inlet
     t_outlet *sigOut;
 
-    // Partial Tracking
-    simpl::Peaks *pPeaks; // previous List Peak
-
 } t_Peaks;
 
-// ==============================================
-static void SetComumVariables(t_Peaks *x, t_symbol *s, int argc, t_atom *argv) {
-    std::string method = s->s_name;
-    if (x->PeakDetection == NULL) {
-        pd_error(NULL, "[peaks~] You need to choose a Peak Detection method");
-        return;
-    }
+static void ConfigPartialTracking(t_Peaks *x, t_symbol *s, int argc,
+                                  t_atom *argv) {
+    // Sms
+    std::string method = x->RealTimeData->PtMethod;
+    if (method == "sms") {
+        std::string configWhat = atom_getsymbolarg(0, argc, argv)->s_name;
 
-    if (method == "sr") {
-        x->PeakDetection->sampling_rate(atom_getfloat(argv));
+        std::string validMethods[] = {"harmonic"};
+        if (std::find(std::begin(validMethods), std::end(validMethods),
+                      configWhat) == std::end(validMethods)) {
+            pd_error(NULL, "[peaks~] Unknown method for %s SMS PartialTracking",
+                     method.c_str());
+        }
+
+        if (configWhat == "harmonic") {
+            int harmonic = atom_getintarg(1, argc, argv);
+            if (harmonic == 0) {
+                x->RealTimeData->PtSMS.harmonic(harmonic);
+                post("[peaks~] Selected Harmonic PartialTracking without "
+                     "phase");
+            } else if (harmonic == 1) {
+                x->RealTimeData->PtSMS.harmonic(harmonic);
+                post("[peaks~] Selected Inharmonic PartialTracking without "
+                     "phase");
+            } else if (harmonic == 2) {
+                x->RealTimeData->PtSMS.harmonic(harmonic);
+                post("[peaks~] Selected Harmonic PartialTracking with phase");
+            } else if (harmonic == 3) {
+                x->RealTimeData->PtSMS.harmonic(harmonic);
+                post("[peaks~] Selected Inharmonic PartialTracking with phase");
+            } else {
+                pd_error(NULL,
+                         "[peaks~] Unknown method for %s SMS PartialTracking",
+                         method.c_str());
+            }
+        }
     }
 }
 
@@ -89,10 +87,9 @@ static void SetMethods(t_Peaks *x, t_symbol *sMethod, t_symbol *sName) {
         Anal->PtMethod = name;
     } else if (method == "peak") {
         Anal->PdMethod = name;
-    } else if (method == "synth") {
-        Anal->SyMethod = name;
     } else {
-        pd_error(NULL, "[peaks~] Unknown method");
+        pd_error(NULL, "[s-peaks~] This object just define the 'peak' and "
+                       "'partial' methods");
         return;
     }
     Anal->error = false;
@@ -236,7 +233,6 @@ static void *NewPeaks(t_symbol *s, int argc, t_atom *argv) {
     // partials
     x->in = new t_sample[x->BufferSize];
     x->done = 0;
-    x->silenceIndex = 0;
 
     // analisys
     static AnalysisData Anal(x->FrameSize, x->BufferSize);
@@ -264,4 +260,6 @@ void s_peaks_tilde_setup(void) {
                     gensym("maxpartials"), A_FLOAT, 0);
     class_addmethod(PeaksDetection, (t_method)SetMethods, gensym("set"),
                     A_SYMBOL, A_SYMBOL, 0);
+    class_addmethod(PeaksDetection, (t_method)ConfigPartialTracking,
+                    gensym("ptcfg"), A_GIMME, 0);
 }

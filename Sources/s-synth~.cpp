@@ -10,53 +10,110 @@ typedef struct _Synth { // It seems that all the objects are some kind of
     t_sample *previousOut;
     t_sample xSample; // audio to fe used in CLASSMAINSIGIN
 
-    // Peak Detection Parameters
-    t_int SynthMethodSet;
+    // Synth Detection Parameters
     t_int SynthBlockSize;
-    t_int running;
     unsigned int synthDone;
-    simpl::Synthesis *Synthesis;
+    std::string SyMethod;
+    bool updateConfig;
+
+    // SMS config
+    unsigned int det_synthesis_type;
+    // Loris config
+    float bandwidth;
 
     // Frames
-    t_pdsimpl *Simpl;
-
-    // Audio
-    t_sample *out;
+    AnalysisData *RealTimeData;
     int blockPosition;
-    int whichBlock;
-    int frameIndex;
-    int perform;
-    int bufferFull;
 
     // Outlet/Inlet
-    t_outlet *sigOut;
+    t_sample *out;
+    t_outlet *outlet;
 
 } t_Synth;
 
 // ==============================================
-static void SetSynthesisMethod(t_Synth *x, t_symbol *s, t_symbol *argv) {
-    std::string method = argv->s_name;
-    if (method == "loris") {
-        x->Synthesis = new simpl::LorisSynthesis();
-    } else if (method == "sms") {
-        x->Synthesis = new simpl::SMSSynthesis();
-        ((simpl::SMSPeakDetection *)x->Synthesis)->realtime(1);
-    } else if (method == "mq") {
-        x->Synthesis = new simpl::MQSynthesis();
-    } else if (method == "snd") {
-        x->Synthesis = new simpl::SndObjSynthesis();
+static void UpdateSynthConfig(t_Synth *x, AnalysisData *Anal) {
+    if (x->SyMethod == "sms") {
+        Anal->SynthSMS.det_synthesis_type(x->det_synthesis_type);
+    } else if (x->SyMethod == "loris") {
+        Anal->SynthLoris.bandwidth(x->bandwidth);
+    }
+}
+
+// ==============================================
+static void ConfigSynth(t_Synth *x, t_symbol *s, int argc, t_atom *argv) {
+    // Sms
+    std::string method = x->SyMethod;
+    x->updateConfig = true;
+    if (method == "sms") {
+        std::string configWhat = atom_getsymbolarg(0, argc, argv)->s_name;
+        if (configWhat == "type") {
+            int type = atom_getintarg(1, argc, argv);
+            x->det_synthesis_type = type;
+            if (type == 0) {
+                post("[s-synth~] Using Inverse Fast Fourier Transform (IFFT)");
+            } else if (type == 1) {
+                post("[s-synth~] Using Sinusoidal Table Lookup (SIN)");
+            } else {
+                pd_error(x, "[s-synth~] Unknown method for %s Synth",
+                         method.c_str());
+            }
+        } else if (configWhat == "hop_size") {
+            int hop_size = atom_getintarg(1, argc, argv);
+            x->SynthBlockSize = hop_size;
+        } else if (configWhat == "stochastic") {
+            pd_error(NULL, "[s-synth~] Stochastic not implemented yet");
+        }
+
+    } else if (method == "loris") {
+        std::string configWhat = atom_getsymbolarg(0, argc, argv)->s_name;
+        if (configWhat == "bandwidth") {
+            x->bandwidth = atom_getfloatarg(1, argc, argv);
+        }
+
     } else {
+        pd_error(NULL, "[s-synth~] This object just define the 'synth' method");
+        return;
+    }
+}
+
+// ==============================================
+static void SetMethods(t_Synth *x, t_symbol *sMethod, t_symbol *sName) {
+    std::string method = sMethod->s_name;
+    std::string name = sName->s_name;
+    std::string validMethods[] = {"sms", "loris", "mq", "sndobj"};
+
+    // check if the method is valid
+    if (std::find(std::begin(validMethods), std::end(validMethods), name) ==
+        std::end(validMethods)) {
         pd_error(NULL, "[peaks~] Unknown method");
         return;
     }
-    x->Synthesis->sampling_rate(sys_getsr());
-    x->SynthMethodSet = 1;
+    if (method == "synth") {
+        x->SyMethod = name;
+    } else {
+        pd_error(NULL, "[s-synth~] This object just define the 'synth' method");
+        return;
+    }
 }
 
 // ==============================================
 static void Synthesis(t_Synth *x, t_gpointer *p) {
     DEBUG_PRINT("[synth~] Starting Synthesis");
     AnalysisData *Anal = (AnalysisData *)p;
+
+    if (x->RealTimeData == nullptr) {
+        x->RealTimeData = Anal;
+    }
+    if (x->updateConfig) {
+        UpdateSynthConfig(x, Anal);
+        x->updateConfig = false;
+    }
+
+    if (Anal->SyMethod != x->SyMethod) {
+        Anal->SyMethod = x->SyMethod;
+        Anal->error = false;
+    }
 
     Anal->mtx.lock();
     Anal->Synth();
@@ -111,7 +168,6 @@ static t_int *SynthAudioPerform(t_int *w) {
 // ==============================================
 static void SynthAddDsp(t_Synth *x, t_signal **sp) {
     x->blockPosition = 0;
-    x->whichBlock = 0;
     dsp_add(SynthAudioPerform, 3, x, sp[0]->s_vec, sp[0]->s_n);
     DEBUG_PRINT("[synth~] Dsp routine added");
 }
@@ -119,8 +175,8 @@ static void SynthAddDsp(t_Synth *x, t_signal **sp) {
 // ==============================================
 static void *NewSynth(t_symbol *synth) {
     t_Synth *x = (t_Synth *)pd_new(Synth);
-    x->sigOut = outlet_new(&x->xObj, &s_signal);
-    x->frameIndex = 0;
+    x->outlet = outlet_new(&x->xObj, &s_signal);
+    x->SyMethod = "sms";
     DEBUG_PRINT("[synth~] New Synth");
     return x;
 }
@@ -132,6 +188,8 @@ void s_synth_tilde_setup(void) {
     class_addmethod(Synth, (t_method)SynthAddDsp, gensym("dsp"), A_CANT, 0);
     class_addmethod(Synth, (t_method)Synthesis, gensym("simplObj"), A_POINTER,
                     0);
-    class_addmethod(Synth, (t_method)SetSynthesisMethod, gensym("set"),
+
+    class_addmethod(Synth, (t_method)SetMethods, gensym("set"), A_SYMBOL,
                     A_SYMBOL, 0);
+    class_addmethod(Synth, (t_method)ConfigSynth, gensym("cfg"), A_GIMME, 0);
 }

@@ -39,10 +39,10 @@ class AnalysisData {
     simpl::MQPartialTracking PtMQ;
 
     // ───────────── Synthesis ──────────
+    simpl::SndObjSynthesis SynthSnd;
+    simpl::LorisSynthesis SynthLoris;
     simpl::SMSSynthesis SynthSMS;
     simpl::MQSynthesis SynthMQ;
-    simpl::LorisSynthesis SynthLoris;
-    simpl::SndObjSynthesis SynthSnd;
 
     // ────────────── Methods ───────────
     void set_max_peaks(int max_peaks);
@@ -122,9 +122,9 @@ void s_test_tilde_setup();
 void s_trans_setup(void);
 
 // ╭─────────────────────────────────────╮
-// │                Loris                │
+// │                Sdif                 │
 // ╰─────────────────────────────────────╯
-void s_loris_pt_tilde_setup(void);
+void s_sdif_setup(void);
 
 // ╭─────────────────────────────────────╮
 // │                 Get                 │

@@ -30,6 +30,7 @@ void AnalysisData::PartialTracking() {
     if (error) {
         return;
     }
+
     if (PtMethod == "loris") {
         PtLoris.update_partials(&Frame);
     } else if (PtMethod == "sndobj") {
@@ -93,6 +94,5 @@ void simpl_setup(void) {
     s_create_setup();
     s_trans_setup();
 
-    // // Loris
-    // s_loris_pt_tilde_setup();
+    s_sdif_setup();
 }
