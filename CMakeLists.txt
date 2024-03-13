@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.5)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Resources/pd.build/pd.cmake)
 
-project(pd-simpl)
+project(pd-partialtrack)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG_MODE")
 
@@ -62,13 +62,13 @@ endif()
 #╰──────────────────────────────────────╯
 # Get all cpp files inside ${CMAKE_SOURCE_DIR}/Sources/ and add them to the project
 file(GLOB EXTERNAL_SOURCES "${CMAKE_SOURCE_DIR}/Sources/*.cpp")
-add_pd_external(pd-simpl simpl ${EXTERNAL_SOURCES})
+add_pd_external(pd-partialtrack partialtrack ${EXTERNAL_SOURCES})
 
-target_include_directories(pd-simpl PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/simpl")
-target_include_directories(pd-simpl PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/mq")
-target_include_directories(pd-simpl PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/sms")
-target_include_directories(pd-simpl PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/loris")
-target_include_directories(pd-simpl PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/sndobj")
+target_include_directories(pd-partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/simpl")
+target_include_directories(pd-partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/mq")
+target_include_directories(pd-partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/sms")
+target_include_directories(pd-partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/loris")
+target_include_directories(pd-partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/sndobj")
 
-set_target_properties(pd-simpl PROPERTIES CXX_STANDARD 11)
-target_link_libraries(pd-simpl PRIVATE simpl)
+set_target_properties(pd-partialtrack PROPERTIES CXX_STANDARD 11)
+target_link_libraries(pd-partialtrack PRIVATE simpl)

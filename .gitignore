@@ -2,6 +2,7 @@
 *.pd_linux
 *.l_amd64
 *.o
+./*.pd
 amd64/
 Libraries/fftw*
 .cache/*
