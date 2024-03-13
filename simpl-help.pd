@@ -17,12 +17,12 @@
 #X obj 30 66 bng 53 250 50 0 empty empty empty 17 7 0 10 #e4e4e4 #000000 #373737;
 #X obj 354 76 tgl 64 0 empty empty empty 17 7 0 10 #e4e4e4 #000000 #373737 0 1;
 #X msg 354 151 \; pd dsp \$1;
-#N canvas 0 50 11 300 MANIPULATIONS 0;
+#N canvas 0 50 11 300 MANIPULATIONS 1;
 #X obj 25 19 inlet;
 #X obj 25 436 outlet;
 #X obj 25 384 s-trans;
 #N canvas 0 50 450 300 remove-all-harmonic-serie 0;
-#X obj 33 464 outlet;
+#X obj 34 454 outlet;
 #X obj 226 47 bng 92 250 50 0 empty empty empty 17 7 0 10 #e4e4e4 #000000 #373737;
 #X obj 33 33 catch~ original;
 #X obj 33 62 sigmund~ -hop 8192 pitch;
@@ -65,14 +65,14 @@
 #X connect 10 0 4 0;
 #X restore 30 311 pd MANIPULATIONS;
 #N canvas 0 50 450 300 RESYNTH 0;
-#X obj 48 240 s-synth~;
+#X obj 48 355 s-synth~;
 #X msg 158 122 set synth \$1;
 #X msg 158 46 sms;
 #X msg 205 46 loris;
 #X msg 251 46 sndobj;
 #X msg 311 46 mq;
 #X obj 158 96 symbol;
-#X obj 48 308 outlet~;
+#X obj 48 423 outlet~;
 #X obj 48 66 inlet;
 #N canvas 0 50 450 300 SMS-SYNTH-CONFIG 0;
 #X msg 42 56 1;
@@ -85,6 +85,8 @@
 #X connect 1 0 5 0;
 #X connect 5 0 4 0;
 #X restore 300 137 pd SMS-SYNTH-CONFIG;
+#X obj 194 214 tgl 61 0 empty empty empty 17 7 0 10 #e4e4e4 #000000 #373737 0 1;
+#X msg 194 284 cfg residual \$1;
 #X connect 0 0 7 0;
 #X connect 1 0 0 0 32.................I....Tq+++eB....05+++qA....;
 #X connect 2 0 6 0;
@@ -94,6 +96,8 @@
 #X connect 6 0 1 0;
 #X connect 8 0 0 0;
 #X connect 9 0 0 0 32.................b....Tv+++OG....E7+++OE....;
+#X connect 10 0 11 0;
+#X connect 11 0 0 0;
 #X restore 30 354 pd RESYNTH;
 #X obj 30 268 s-peaks~ -hop 256 -fr 512 -pd loris -pt sms;
 #X obj 402 360 unpack f f f f;
@@ -105,7 +109,7 @@
 #X obj 129 355 tgl 25 0 empty empty empty 17 7 0 10 #e4e4e4 #000000 #373737 0 1;
 #X obj 93 496 pd-ckn/ckn-record;
 #X obj 176 360 nbx 4 18 -1e+37 1e+37 0 0 empty empty empty 0 -8 0 10 #e4e4e4 #373737 #373737 0 256;
-#N canvas 0 50 450 300 CHOOSE 0;
+#N canvas 0 50 450 300 CHOOSE 1;
 #X msg 100 211 set \$1 \$2;
 #X obj 100 177 pack s s;
 #X msg 63 75 peak;
@@ -147,6 +151,7 @@
 #X connect 7 0 6 0;
 #X connect 8 0 14 0;
 #X connect 8 0 19 0;
+#X connect 8 1 9 0;
 #X connect 9 0 8 0;
 #X connect 10 0 11 0;
 #X connect 12 0 13 0;

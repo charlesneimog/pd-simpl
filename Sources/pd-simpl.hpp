@@ -25,6 +25,7 @@ class AnalysisData {
     std::string PdMethod;
     std::string PtMethod;
     std::string SyMethod;
+    bool residual = false;
 
     // ─────────── PeakDetection ────────
     simpl::SndObjPeakDetection PdSnd;
@@ -43,6 +44,9 @@ class AnalysisData {
     simpl::LorisSynthesis SynthLoris;
     simpl::SMSSynthesis SynthSMS;
     simpl::MQSynthesis SynthMQ;
+
+    // ────────────── Residual ──────────────
+    simpl::Residual Residual;
 
     // ────────────── Methods ───────────
     void set_max_peaks(int max_peaks);
@@ -114,7 +118,12 @@ typedef struct _pdsimpl {
 void s_peaks_tilde_setup();
 void s_partials_setup();
 void s_synth_tilde_setup();
-void s_test_tilde_setup();
+
+// ╭─────────────────────────────────────╮
+// │       Simpl Partial Tracking        │
+// ╰─────────────────────────────────────╯
+void s_ss_tilde();
+void s_spt_tilde_setup();
 
 // ╭─────────────────────────────────────╮
 // │           Transformations           │

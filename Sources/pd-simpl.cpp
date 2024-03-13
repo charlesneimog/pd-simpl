@@ -62,6 +62,9 @@ void AnalysisData::Synth() {
         pd_error(NULL, "[simpl] Unknown Synth method");
         error = true;
     }
+    if (residual) {
+        Residual.residual_frame(&Frame);
+    }
 }
 
 // ==============================================
@@ -94,5 +97,7 @@ void simpl_setup(void) {
     s_create_setup();
     s_trans_setup();
 
-    s_sdif_setup();
+    // SimplPartial
+    s_spt_tilde_setup();
+    s_ss_tilde();
 }

@@ -105,6 +105,28 @@ static void SetDetached(t_Peaks *x, t_float f) {
 }
 
 // ==============================================
+static void SetConfigs(t_Peaks *x, t_symbol *s, int argc, t_atom *argv) {
+    std::string method = atom_getsymbolarg(0, argc, argv)->s_name;
+    if (method == "framesize") {
+        unsigned int value = atom_getintarg(1, argc, argv);
+        x->RealTimeData->set_max_peaks(value);
+    } else if (method == "hopsize") {
+
+    } else if (method == "peak") {
+
+    } else if (method == "partial") {
+
+    } else if (method == "harmonic") {
+
+    } else if (method == "fundamental") {
+    }
+
+    //
+
+    return;
+}
+
+// ==============================================
 static void SetMaxPartials(t_Peaks *x, t_float f) {
     AnalysisData *Anal = (AnalysisData *)x->RealTimeData;
     Anal->set_max_peaks(f);
@@ -224,11 +246,11 @@ static void *NewPeaks(t_symbol *s, int argc, t_atom *argv) {
     }
 
     if (!hopDefined) {
-        post("[peaks~] Using default hop size of 512 samples");
+        post("[peaks~] Using default FrameSize of 1024 and HopSize of 512 "
+             "samples");
         x->FrameSize = 1024;
         x->BufferSize = 512;
     }
-    // return NULL;
 
     // partials
     x->in = new t_sample[x->BufferSize];
@@ -242,7 +264,6 @@ static void *NewPeaks(t_symbol *s, int argc, t_atom *argv) {
 
     x->RealTimeData = &Anal;
     DEBUG_PRINT("[peaks~] Object created");
-
     return (void *)x;
 }
 
@@ -256,10 +277,10 @@ void s_peaks_tilde_setup(void) {
                     A_CANT, 0);
     class_addmethod(PeaksDetection, (t_method)SetDetached, gensym("detached"),
                     A_FLOAT, 0);
-    class_addmethod(PeaksDetection, (t_method)SetMaxPartials,
-                    gensym("maxpartials"), A_FLOAT, 0);
-    class_addmethod(PeaksDetection, (t_method)SetMethods, gensym("set"),
-                    A_SYMBOL, A_SYMBOL, 0);
+    class_addmethod(PeaksDetection, (t_method)SetConfigs, gensym("set"),
+                    A_GIMME, 0);
     class_addmethod(PeaksDetection, (t_method)ConfigPartialTracking,
                     gensym("ptcfg"), A_GIMME, 0);
+
+    //
 }

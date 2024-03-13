@@ -10,6 +10,9 @@ typedef struct _Synth { // It seems that all the objects are some kind of
     t_sample *previousOut;
     t_sample xSample; // audio to fe used in CLASSMAINSIGIN
 
+    // residual
+    bool residual;
+
     // Synth Detection Parameters
     t_int SynthBlockSize;
     unsigned int synthDone;
@@ -38,6 +41,8 @@ static void UpdateSynthConfig(t_Synth *x, AnalysisData *Anal) {
     } else if (x->SyMethod == "loris") {
         Anal->SynthLoris.bandwidth(x->bandwidth);
     }
+
+    Anal->residual = x->residual;
 }
 
 // ==============================================
@@ -45,8 +50,17 @@ static void ConfigSynth(t_Synth *x, t_symbol *s, int argc, t_atom *argv) {
     // Sms
     std::string method = x->SyMethod;
     x->updateConfig = true;
+    std::string configWhat = atom_getsymbolarg(0, argc, argv)->s_name;
+    if (configWhat == "residual") {
+        x->residual = atom_getfloatarg(1, argc, argv);
+        if (x->residual) {
+            post("Residual Synthesis enabled");
+        } else {
+            post("Residual Synthesis disabled");
+        }
+    }
+
     if (method == "sms") {
-        std::string configWhat = atom_getsymbolarg(0, argc, argv)->s_name;
         if (configWhat == "type") {
             int type = atom_getintarg(1, argc, argv);
             x->det_synthesis_type = type;
@@ -66,7 +80,6 @@ static void ConfigSynth(t_Synth *x, t_symbol *s, int argc, t_atom *argv) {
         }
 
     } else if (method == "loris") {
-        std::string configWhat = atom_getsymbolarg(0, argc, argv)->s_name;
         if (configWhat == "bandwidth") {
             x->bandwidth = atom_getfloatarg(1, argc, argv);
         }
@@ -117,6 +130,7 @@ static void Synthesis(t_Synth *x, t_gpointer *p) {
 
     Anal->mtx.lock();
     Anal->Synth();
+
     int size = Anal->Frame.synth_size();
     if (x->out == nullptr) {
         x->out = new t_sample[size];
@@ -191,5 +205,6 @@ void s_synth_tilde_setup(void) {
 
     class_addmethod(Synth, (t_method)SetMethods, gensym("set"), A_SYMBOL,
                     A_SYMBOL, 0);
+
     class_addmethod(Synth, (t_method)ConfigSynth, gensym("cfg"), A_GIMME, 0);
 }
