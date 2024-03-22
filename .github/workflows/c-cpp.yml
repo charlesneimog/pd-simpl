@@ -51,7 +51,8 @@ jobs:
         run: "cmake . -B build\ncmake --build build \n"
       - name: Move files to pd-partialtrack
         run: |
-          cp partialtrack.m_amd64 pd-partialtrack
+          mkdir pd-partialtrack
+          cp partialtrack.m_amd64 pd-partialtrack/
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
