@@ -16,6 +16,9 @@ typedef struct _Peaks {
     t_int firstblock;
     t_int n;
 
+    // clock
+    t_clock *x_clock;
+
     // AnalysisData
     AnalysisData *RealTimeData;
     t_int FrameSize;
@@ -133,9 +136,23 @@ static void SetMaxPartials(t_Peaks *x, t_float f) {
 }
 
 // ==============================================
+static void PeaksTick(t_Peaks *x) {
+    t_atom args[1];
+
+    char ptr[MAXPDSTRING];
+    sprintf(ptr, "%p", x->RealTimeData);
+    SETSYMBOL(&args[0], gensym(ptr));
+    outlet_anything(x->sigOut, gensym("simplObj"), 1, args);
+
+    x->RealTimeData->Frame.clear_peaks();
+    x->RealTimeData->Frame.clear_partials();
+    x->RealTimeData->Frame.clear_synth();
+}
+
+// ==============================================
 static void PartialTrackingProcessor(t_Peaks *x) {
     DEBUG_PRINT("[peaks~] Start PartialTracking");
-    x->running = 1;
+
     AnalysisData *Anal = (AnalysisData *)x->RealTimeData;
 
     Anal->mtx.lock();
@@ -145,11 +162,9 @@ static void PartialTrackingProcessor(t_Peaks *x) {
     Anal->Frame.audio(&(Anal->audio[0]), x->BufferSize);
     Anal->PeakDectection();
     Anal->PartialTracking();
-
     Anal->mtx.unlock();
 
-    x->done = 1;
-    x->firstblock = 0;
+    clock_delay(x->x_clock, 0);
     DEBUG_PRINT("[peaks~] Finished PartialTracking");
 }
 
@@ -164,14 +179,7 @@ static t_int *PeaksAudioPerform(t_int *w) {
         x->audioInBlockIndex++;
         if (x->audioInBlockIndex == x->BufferSize) {
             x->audioInBlockIndex = 0;
-            if (x->done && x->firstblock != 1) {
-                t_atom args[1];
-                SETPOINTER(&args[0], (t_gpointer *)x->RealTimeData);
-                outlet_anything(x->sigOut, gensym("simplObj"), 1, args);
-                x->done = 0;
-            }
             PartialTrackingProcessor(x);
-            x->firstblock = 0;
         }
     }
     return (w + 4);
@@ -180,13 +188,6 @@ static t_int *PeaksAudioPerform(t_int *w) {
 // ==============================================
 static void PeaksAddDsp(t_Peaks *x, t_signal **sp) {
     DEBUG_PRINT("[peaks~] Adding Dsp");
-    if (x->FrameSize < 512) {
-        pd_error(NULL, "[peaks~] The block size must be at least 512 samples");
-        dsp_add_zero(sp[0]->s_vec, sp[0]->s_n);
-        return;
-    }
-    x->firstblock = 1;
-    x->running = 0;
     dsp_add(PeaksAudioPerform, 3, x, sp[0]->s_vec, (t_int)sp[0]->s_n);
     DEBUG_PRINT("[peaks~] Dsp Rotine added");
 }
@@ -195,6 +196,8 @@ static void PeaksAddDsp(t_Peaks *x, t_signal **sp) {
 static void *NewPeaks(t_symbol *s, int argc, t_atom *argv) {
     t_Peaks *x = (t_Peaks *)pd_new(PeaksDetection);
     x->sigOut = outlet_new(&x->xObj, &s_anything);
+    x->x_clock = clock_new(x, (t_method)PeaksTick);
+
     x->maxPeaks = 127; // TODO: No default
     int hopSize = 1024;
 

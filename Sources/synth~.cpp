@@ -1,4 +1,5 @@
 #include "pd-partialtrack.hpp"
+#include <m_pd.h>
 
 static t_class *Synth;
 
@@ -6,12 +7,7 @@ static t_class *Synth;
 typedef struct _Synth { // It seems that all the objects are some kind of
                         // class.
     t_object xObj;
-
-    t_sample *previousOut;
-    t_sample xSample; // audio to fe used in CLASSMAINSIGIN
-
-    // residual
-    bool residual;
+    t_sample *out;
 
     // Synth Detection Parameters
     t_int SynthBlockSize;
@@ -21,6 +17,7 @@ typedef struct _Synth { // It seems that all the objects are some kind of
 
     // SMS config
     unsigned int det_synthesis_type;
+    bool residual;
     // Loris config
     float bandwidth;
 
@@ -29,7 +26,6 @@ typedef struct _Synth { // It seems that all the objects are some kind of
     int blockPosition;
 
     // Outlet/Inlet
-    t_sample *out;
     t_outlet *outlet;
 
 } t_Synth;
@@ -91,6 +87,43 @@ static void ConfigSynth(t_Synth *x, t_symbol *s, int argc, t_atom *argv) {
 }
 
 // ==============================================
+static void SynthesisSymbol(t_Synth *x, t_symbol *p) {
+
+    std::uintptr_t Ptr = std::strtoul(p->s_name, nullptr, 16);
+    AnalysisData *Anal = (AnalysisData *)Ptr;
+
+    if (x->RealTimeData == nullptr) {
+        x->RealTimeData = Anal;
+    }
+    if (x->updateConfig) {
+        UpdateSynthConfig(x, Anal);
+        x->updateConfig = false;
+    }
+
+    if (Anal->SyMethod != x->SyMethod) {
+        Anal->SyMethod = x->SyMethod;
+        Anal->error = false;
+    }
+
+    Anal->mtx.lock();
+    Anal->Synth();
+
+    int size = Anal->Frame.synth_size();
+    if (x->out == nullptr) {
+        x->out = new t_sample[size];
+        x->SynthBlockSize = size;
+    }
+
+    for (unsigned int i = 0; i < size; i++) {
+        x->out[i] = Anal->Frame.synth()[i];
+    }
+
+    Anal->mtx.unlock();
+    x->synthDone = 1;
+    DEBUG_PRINT("[synth~] Finished Synthesis\n"); // NOTE: End of the cycle
+}
+
+// ==============================================
 static void SetMethods(t_Synth *x, t_symbol *sMethod, t_symbol *sName) {
     std::string method = sMethod->s_name;
     std::string name = sName->s_name;
@@ -141,11 +174,7 @@ static void Synthesis(t_Synth *x, t_gpointer *p) {
         x->out[i] = Anal->Frame.synth()[i];
     }
 
-    Anal->Frame.clear_peaks();
-    Anal->Frame.clear_partials();
-    Anal->Frame.clear_synth();
     Anal->mtx.unlock();
-
     x->synthDone = 1;
     DEBUG_PRINT("[synth~] Finished Synthesis\n"); // NOTE: End of the cycle
 }
@@ -182,6 +211,8 @@ static t_int *SynthAudioPerform(t_int *w) {
 // ==============================================
 static void SynthAddDsp(t_Synth *x, t_signal **sp) {
     x->blockPosition = 0;
+    x->synthDone = 0;
+
     dsp_add(SynthAudioPerform, 3, x, sp[0]->s_vec, sp[0]->s_n);
     DEBUG_PRINT("[synth~] Dsp routine added");
 }
@@ -200,8 +231,8 @@ void SynthSetup(void) {
     Synth = class_new(gensym("pt-synth~"), (t_newmethod)NewSynth, NULL,
                       sizeof(t_Synth), CLASS_DEFAULT, A_DEFSYMBOL, 0);
     class_addmethod(Synth, (t_method)SynthAddDsp, gensym("dsp"), A_CANT, 0);
-    class_addmethod(Synth, (t_method)Synthesis, gensym("simplObj"), A_POINTER,
-                    0);
+    class_addmethod(Synth, (t_method)SynthesisSymbol, gensym("simplObj"),
+                    A_SYMBOL, 0);
 
     class_addmethod(Synth, (t_method)SetMethods, gensym("set"), A_SYMBOL,
                     A_SYMBOL, 0);

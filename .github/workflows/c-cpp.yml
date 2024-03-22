@@ -45,7 +45,7 @@ jobs:
         with:
           msystem: mingw64
           platform: x64
-          install: make autoconf automake libtool mingw-w64-x86_64-gcc cmake mingw-w64-x86_64-fftw mingw-w64-x86_64-gsl
+          install: make autoconf automake libtool mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-cmake mingw-w64-x86_64-fftw mingw-w64-x86_64-gsl
           update: false
       - name: Install PureData
         run: |

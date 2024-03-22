@@ -85,8 +85,8 @@ void partialtrack_setup(void) {
     }
 
     post("");
-    post("[partialtrack] Simpl by John Glover");
-    post("[partialtrack] ported by Charles K. Neimog");
+    post("[partialtrack] by Charles K. Neimog");
+    post("[partialtrack] it uses simpl by John Glover");
     post("[partialtrack] version %d.%d.%d", 0, 0, 1);
     post("");
 

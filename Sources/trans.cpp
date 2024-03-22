@@ -185,8 +185,10 @@ static void SetExpantionPartials(t_Trans *x, t_float factor) {
 // │        Partial Manipulations        │
 // ╰─────────────────────────────────────╯
 // =======================================
-static void Process(t_Trans *x, t_gpointer *p) {
-    AnalysisData *Anal = (AnalysisData *)p;
+static void Process(t_Trans *x, t_symbol *p) {
+
+    std::uintptr_t Ptr = std::strtoul(p->s_name, nullptr, 16);
+    AnalysisData *Anal = (AnalysisData *)Ptr;
     for (int i = 0; i < Anal->Frame.num_partials(); i++) {
         if (x->sIndex != 0)
             SilencePartials(x, Anal, i);
@@ -197,8 +199,11 @@ static void Process(t_Trans *x, t_gpointer *p) {
         if (x->aIndex != 0)
             ChangeAmps(x, Anal, i);
     }
+
     t_atom args[1];
-    SETPOINTER(&args[0], (t_gpointer *)Anal);
+    char ptr[MAXPDSTRING];
+    sprintf(ptr, "%p", Anal);
+    SETSYMBOL(&args[0], gensym(ptr));
     outlet_anything(x->out, gensym("simplObj"), 1, args);
 }
 
@@ -228,5 +233,5 @@ void TransformationsSetup(void) {
     class_addmethod(Transformations, (t_method)ResetAll, gensym("reset"),
                     A_NULL, 0);
     class_addmethod(Transformations, (t_method)Process, gensym("simplObj"),
-                    A_POINTER, 0);
+                    A_SYMBOL, 0);
 }
