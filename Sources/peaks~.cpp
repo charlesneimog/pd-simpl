@@ -1,4 +1,4 @@
-#include "pd-simpl.hpp"
+#include "pd-partialtrack.hpp"
 
 static t_class *PeaksDetection;
 #define MAX_SILENCED_PARTIALS 127
@@ -170,12 +170,7 @@ static t_int *PeaksAudioPerform(t_int *w) {
                 outlet_anything(x->sigOut, gensym("simplObj"), 1, args);
                 x->done = 0;
             }
-            if (x->detached) {
-                std::thread t(PartialTrackingProcessor, x);
-                t.detach();
-            } else {
-                PartialTrackingProcessor(x);
-            }
+            PartialTrackingProcessor(x);
             x->firstblock = 0;
         }
     }
@@ -268,8 +263,8 @@ static void *NewPeaks(t_symbol *s, int argc, t_atom *argv) {
 }
 
 // ==============================================
-void s_peaks_tilde_setup(void) {
-    PeaksDetection = class_new(gensym("s-peaks~"), (t_newmethod)NewPeaks, NULL,
+void PeakSetup(void) {
+    PeaksDetection = class_new(gensym("pt-peaks~"), (t_newmethod)NewPeaks, NULL,
                                sizeof(t_Peaks), CLASS_DEFAULT, A_GIMME, 0);
 
     CLASS_MAINSIGNALIN(PeaksDetection, t_Peaks, xSample);

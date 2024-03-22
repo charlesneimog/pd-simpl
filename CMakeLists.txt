@@ -64,6 +64,9 @@ endif()
 file(GLOB EXTERNAL_SOURCES "${CMAKE_SOURCE_DIR}/Sources/*.cpp")
 add_pd_external(pd-partialtrack partialtrack ${EXTERNAL_SOURCES})
 
+target_compile_options(pd-partialtrack PRIVATE "-O3" "-Wall" "-Wshadow" "-ffast-math" "-funroll-loops" "-fomit-frame-pointer" "-mfpmath=sse" "-msse" "-msse2" "-msse3" "-DPD")
+
+
 target_include_directories(pd-partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/simpl")
 target_include_directories(pd-partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/mq")
 target_include_directories(pd-partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/sms")
@@ -72,3 +75,4 @@ target_include_directories(pd-partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/L
 
 set_target_properties(pd-partialtrack PROPERTIES CXX_STANDARD 11)
 target_link_libraries(pd-partialtrack PRIVATE simpl)
+target_link_libraries(pd-partialtrack PRIVATE pd)

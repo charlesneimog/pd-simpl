@@ -99,7 +99,7 @@ class AnalysisData {
 };
 
 typedef struct _pdsimpl {
-    simpl::PeakDetection *PD;
+    simpl::PeakDetection *PeakDetection;
     simpl::PartialTracking *PT;
     simpl::Synthesis *Synth;
     simpl::Frame *Frame;
@@ -115,32 +115,6 @@ typedef struct _pdsimpl {
 // ╭─────────────────────────────────────╮
 // │            Main Objects             │
 // ╰─────────────────────────────────────╯
-void s_peaks_tilde_setup();
-void s_partials_setup();
-void s_synth_tilde_setup();
-
-// ╭─────────────────────────────────────╮
-// │       Simpl Partial Tracking        │
-// ╰─────────────────────────────────────╯
-void s_ss_tilde();
-void s_spt_tilde_setup();
-
-// ╭─────────────────────────────────────╮
-// │           Transformations           │
-// ╰─────────────────────────────────────╯
-void s_trans_setup(void);
-
-// ╭─────────────────────────────────────╮
-// │                Sdif                 │
-// ╰─────────────────────────────────────╯
-void s_sdif_setup(void);
-
-// ╭─────────────────────────────────────╮
-// │                 Get                 │
-// ╰─────────────────────────────────────╯
-void s_get_setup();
-
-// ╭─────────────────────────────────────╮
-// │               Create                │
-// ╰─────────────────────────────────────╯
-void s_create_setup();
+void PeakSetup(void);
+void SynthSetup(void);
+void TransformationsSetup(void);

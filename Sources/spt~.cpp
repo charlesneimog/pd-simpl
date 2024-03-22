@@ -1,4 +1,4 @@
-#include "s-spt.hpp"
+#include "spt.hpp"
 
 t_class *sptpartials_class;
 

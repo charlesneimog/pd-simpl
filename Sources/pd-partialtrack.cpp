@@ -1,8 +1,8 @@
-#include "pd-simpl.hpp"
+#include "pd-partialtrack.hpp"
 
 #if defined(_LANGUAGE_C_PLUS_PLUS) || defined(__cplusplus)
 extern "C" {
-void simpl_setup(void);
+void partialtrack_setup(void);
 }
 #endif
 
@@ -75,7 +75,7 @@ void AnalysisData::set_max_peaks(int max_peaks) {
 }
 
 // ==============================================
-void simpl_setup(void) {
+void partialtrack_setup(void) {
 
     int major, minor, micro;
     sys_getversion(&major, &minor, &micro);
@@ -85,19 +85,12 @@ void simpl_setup(void) {
     }
 
     post("");
-    post("[simpl] by John Glover");
-    post("[simpl] ported by Charles K. Neimog");
-    post("[simpl] simpl version %d.%d.%d", 0, 0, 1);
+    post("[partialtrack] Simpl by John Glover");
+    post("[partialtrack] ported by Charles K. Neimog");
+    post("[partialtrack] version %d.%d.%d", 0, 0, 1);
     post("");
 
-    // Global
-    s_peaks_tilde_setup();
-    s_synth_tilde_setup();
-    s_get_setup();
-    s_create_setup();
-    s_trans_setup();
-
-    // SimplPartial
-    s_spt_tilde_setup();
-    s_ss_tilde();
+    PeakSetup();
+    SynthSetup();
+    TransformationsSetup();
 }

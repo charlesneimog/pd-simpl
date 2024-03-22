@@ -1,4 +1,4 @@
-#include "pd-simpl.hpp"
+#include "pd-partialtrack.hpp"
 
 static t_class *Synth;
 
@@ -196,8 +196,8 @@ static void *NewSynth(t_symbol *synth) {
 }
 
 // ==============================================
-void s_synth_tilde_setup(void) {
-    Synth = class_new(gensym("s-synth~"), (t_newmethod)NewSynth, NULL,
+void SynthSetup(void) {
+    Synth = class_new(gensym("pt-synth~"), (t_newmethod)NewSynth, NULL,
                       sizeof(t_Synth), CLASS_DEFAULT, A_DEFSYMBOL, 0);
     class_addmethod(Synth, (t_method)SynthAddDsp, gensym("dsp"), A_CANT, 0);
     class_addmethod(Synth, (t_method)Synthesis, gensym("simplObj"), A_POINTER,

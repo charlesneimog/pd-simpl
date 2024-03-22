@@ -1,4 +1,4 @@
-#include "pd-simpl.hpp"
+#include "pd-partialtrack.hpp"
 
 static t_class *Transformations;
 
@@ -139,6 +139,12 @@ static void SetTransposedPartial(t_Trans *x, t_float centerFreq,
 }
 
 //  ======================================
+static void ResetAll(t_Trans *x) {
+    x->sIndex = 0;
+    x->aIndex = 0;
+    x->tIndex = 0;
+}
+//  ======================================
 static void SetAmplitudeForPartial(t_Trans *x, t_float centerFreq,
                                    t_float variation, t_float amp) {
     // args: centerFreq, cents variation, cents to transpose
@@ -206,9 +212,9 @@ static void *NewTransform(t_symbol *synth) {
 }
 
 // ==============================================
-void s_trans_setup(void) {
+void TransformationsSetup(void) {
     Transformations =
-        class_new(gensym("s-trans"), (t_newmethod)NewTransform, NULL,
+        class_new(gensym("pt-trans"), (t_newmethod)NewTransform, NULL,
                   sizeof(t_Trans), CLASS_DEFAULT, A_GIMME, 0);
 
     class_addmethod(Transformations, (t_method)SetSilencePartial,
@@ -219,6 +225,8 @@ void s_trans_setup(void) {
                     gensym("trans"), A_FLOAT, A_FLOAT, A_FLOAT, 0);
     class_addmethod(Transformations, (t_method)SetAmplitudeForPartial,
                     gensym("amps"), A_FLOAT, A_FLOAT, A_FLOAT, 0);
+    class_addmethod(Transformations, (t_method)ResetAll, gensym("reset"),
+                    A_NULL, 0);
     class_addmethod(Transformations, (t_method)Process, gensym("simplObj"),
                     A_POINTER, 0);
 }
