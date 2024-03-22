@@ -6,7 +6,7 @@ project(pd-partialtrack)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG_MODE")
 
-set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/${project_name})
+set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/pd-partialtrack)
 
 set(PD_FLOATSIZE64 "OFF")
 

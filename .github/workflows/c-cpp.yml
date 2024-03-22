@@ -17,10 +17,10 @@ jobs:
           brew install --cask pd
       - name: Build Object
         run: "cmake . -B build\ncmake --build build -j $(sysctl -n hw.logicalcpu)\n      \n"
-      - name: Make zip file
-        run: |
-          mkdir pd-partialtrack
-          cp *.d_amd64 pd-partialtrack
+      # - name: Make zip file
+      #   run: |
+      #     mkdir pd-partialtrack
+      #     cp *.d_amd64 pd-partialtrack
       - name: Upload Object
         uses: actions/upload-artifact@v3
         with:
@@ -49,10 +49,10 @@ jobs:
         name: Build Object
         shell: msys2 {0}
         run: "cmake . -B build\ncmake --build build \n"
-      - name: Move files to pd-partialtrack
-        run: |
-          mkdir pd-partialtrack
-          cp partialtrack.m_amd64 pd-partialtrack/
+      # - name: Move files to pd-partialtrack
+      #   run: |
+      #     mkdir pd-partialtrack
+      #     cp *.m_amd64 pd-partialtrack/
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
@@ -82,10 +82,10 @@ jobs:
         run: |
           cmake . -B build
           cmake --build build -- -j$(nproc)
-      - name: Make zip file
-        run: |
-          mkdir pd-partialtrack
-          cp *.l_amd64 pd-partialtrack
+      # - name: Make zip file
+      #   run: |
+      #     mkdir pd-partialtrack
+      #     cp *.l_amd64 pd-partialtrack
       - name: Upload Object
         uses: actions/upload-artifact@v3
         with:
