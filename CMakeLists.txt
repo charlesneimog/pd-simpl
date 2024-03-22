@@ -63,14 +63,6 @@ set_target_properties(simpl PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(simpl PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/fftw-3.3.10/api")
 
 
-
-# Suppress warnings for the simpl library
-if(MSVC)
-    target_compile_options(simpl PRIVATE /W0)
-else()
-    target_compile_options(simpl PRIVATE -w)
-endif()
-
 #╭──────────────────────────────────────╮
 #│             Pd External              │
 #╰──────────────────────────────────────╯
