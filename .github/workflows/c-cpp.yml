@@ -15,23 +15,18 @@ jobs:
       - name: Install PureData and Deps
         run: |
           brew install --cask pd
-          brew install fftw
-          brew install gsl
       - name: Build Object
-        run: |
-          cmake . -B build
-          cmake --build build
+        run: "cmake . -B build\ncmake --build build -j $(sysctl -n hw.logicalcpu)\n      \n"
       - name: Make zip file
         run: |
-          mkdir pd-simpl
-          cp -r amd64 pd-simpl
-          cp *.dylib pd-simpl
-          cp *.d_amd64 pd-simpl
+          mkdir pd-partialtrack
+          cp *.d_amd64 pd-partialtrack
       - name: Upload Object
         uses: actions/upload-artifact@v3
         with:
-          name: pd-simpl
-          path: pd-simpl
+          name: pd-partialtrack
+          path: pd-partialtrack
+          # ──────────────────────────────────────
   windows-build:
     runs-on: windows-latest
     steps:
@@ -45,7 +40,7 @@ jobs:
         with:
           msystem: mingw64
           platform: x64
-          install: make autoconf automake libtool mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-cmake mingw-w64-x86_64-fftw mingw-w64-x86_64-gsl
+          install: make autoconf automake libtool mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-cmake
           update: false
       - name: Install PureData
         run: |
@@ -53,17 +48,15 @@ jobs:
       - if: runner.os == 'Windows'
         name: Build Object
         shell: msys2 {0}
+        run: "cmake . -B build\ncmake --build build \n"
+      - name: Move files to pd-partialtrack
         run: |
-          cmake . -B build
-          cmake --build build
-      - name: Move files to pd-simpl
-        run: |
-          cp server.m_amd64 pd-simpl
+          cp partialtrack.m_amd64 pd-partialtrack
       - name: Upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
-          name: pd-simpl
-          path: pd-simpl
+          name: pd-partialtrack
+          path: pd-partialtrack
   #       # # # ===============================================================================================
   #       # # # ===============================================================================================
   #       # # # ===============================================================================================
@@ -84,21 +77,16 @@ jobs:
           sudo apt-get update
           sudo add-apt-repository ppa:pure-data/pure-data -y
           sudo apt-get install puredata -y
-      - name: Dependencies
-        run: |
-          sudo apt install fftw3-dev
       - name: Build Object
         run: |
           cmake . -B build
-          cmake --build build
+          cmake --build build -- -j$(nproc)
       - name: Make zip file
         run: |
-          mkdir pd-simpl
-          cp *.so pd-simpl
-          cp -r amd64 pd-simpl
-          cp *.l_amd64 pd-simpl
+          mkdir pd-partialtrack
+          cp *.l_amd64 pd-partialtrack
       - name: Upload Object
         uses: actions/upload-artifact@v3
         with:
-          name: pd-simpl
-          path: pd-simpl
+          name: pd-partialtrack
+          path: pd-partialtrack
