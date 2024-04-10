@@ -16,6 +16,9 @@ typedef struct _Peaks {
     t_int firstblock;
     t_int n;
 
+    // Config
+    t_int fr_resources = 0;
+
     // clock
     t_clock *x_clock;
 
@@ -115,6 +118,9 @@ static void SetConfigs(t_Peaks *x, t_symbol *s, int argc, t_atom *argv) {
         x->RealTimeData->set_max_peaks(value);
     } else if (method == "hopsize") {
 
+    } else if (method == "fr_resources") {
+        x->fr_resources = atom_getintarg(1, argc, argv);
+        post("[peaks~] I will not process when audio is 0");
     } else if (method == "peak") {
 
     } else if (method == "partial") {
@@ -174,6 +180,18 @@ static t_int *PeaksAudioPerform(t_int *w) {
     t_sample *in = (t_sample *)(w[2]);
     int n = (int)(w[3]);
     x->n = n;
+
+    if (x->fr_resources) {
+        // check if audio sum is zero
+        float sum = 0;
+        for (int i = 0; i < n; i++) {
+            sum += abs(in[i]);
+        }
+        if (sum == 0) {
+            return (w + 4);
+        }
+    }
+
     for (int i = 0; i < n; i++) {
         x->in[x->audioInBlockIndex] = (double)in[i];
         x->audioInBlockIndex++;
@@ -254,13 +272,16 @@ static void *NewPeaks(t_symbol *s, int argc, t_atom *argv) {
     x->in = new t_sample[x->BufferSize];
     x->done = 0;
 
-    // analisys
-    static AnalysisData Anal(x->FrameSize, x->BufferSize);
-    Anal.PdMethod = pd;
-    Anal.PtMethod = pt;
-    Anal.SyMethod = sy;
+    // t_PtrPartialAnalysis *analPtr = newAnalisysPtr(x->FrameSize,
+    // x->BufferSize); post("[peaks~] Created new AnalysisData object %s",
+    // analPtr->x_sym);
 
-    x->RealTimeData = &Anal;
+    // analisys
+    x->RealTimeData = new AnalysisData(x->FrameSize, x->BufferSize);
+    x->RealTimeData->PdMethod = pd;
+    x->RealTimeData->PtMethod = pt;
+    x->RealTimeData->SyMethod = sy;
+
     DEBUG_PRINT("[peaks~] Object created");
     return (void *)x;
 }

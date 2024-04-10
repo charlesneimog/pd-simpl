@@ -55,7 +55,8 @@ static void Transpose(t_Trans *x, AnalysisData *Anal, int i) {
             return;
         }
         for (int i = 0; i < x->tIndex; i++) {
-            if (Peak->frequency >= x->tCenterFreq[i] - x->tVariation[i] &&
+            if (Peak->frequency >=
+                    x->tCenterFreq[i] - x->tVariation[i] && // TODO: Fix this
                 Peak->frequency <= x->tCenterFreq[i] + x->tVariation[i]) {
                 float newFreq = transFreq(Peak->frequency, x->tCents[i]);
                 Peak->frequency = newFreq;
@@ -165,10 +166,11 @@ static void SetAmplitudeForPartial(t_Trans *x, t_float centerFreq,
     }
 }
 // ==============================================
-static void SetSilencePartial(t_Trans *x, t_float low, t_float high) {
+static void SetSilencePartial(t_Trans *x, t_float centerFreq,
+                              t_float variation) {
     if (x->sIndex < MAX_SILENCED_PARTIALS) {
-        x->sLowNote[x->sIndex] = low;
-        x->sHighNote[x->sIndex] = high;
+        x->sLowNote[x->sIndex] = centerFreq - variation;
+        x->sHighNote[x->sIndex] = centerFreq + variation;
         x->sIndex++;
     } else {
         pd_error(NULL, "[peaks~] Maximum number of silenced partials reached");

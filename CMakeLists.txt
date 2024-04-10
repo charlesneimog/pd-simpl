@@ -47,15 +47,10 @@ set_target_properties(fftw3 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 #│             Static Simpl             │
 #╰──────────────────────────────────────╯
 add_subdirectory(Libraries/simpl)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++03 -static-libstdc++ -static-libgcc")
 
 if (WIN32)
     target_compile_definitions(simpl PRIVATE random=rand srandom=srand)
-    target_link_options(simpl PRIVATE
-        "-static-libgcc"
-        "-static-libstdc++"  
-        "-static"
-        "-Wl,-allow-multiple-definition"
-    )
 endif()
 
 set_target_properties(simpl PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
