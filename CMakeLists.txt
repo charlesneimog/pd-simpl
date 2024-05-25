@@ -50,7 +50,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Libraries/fftw-3.3.10/api)
 #│             Static Simpl             │
 #╰──────────────────────────────────────╯
 add_subdirectory(Libraries/simpl)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++03 -static-libstdc++ -static-libgcc")
 
 if (WIN32)
     target_compile_definitions(simpl PRIVATE random=rand srandom=srand)
@@ -76,7 +75,7 @@ endif()
 
 
 
-target_link_libraries(partialtrack PRIVATE simpl)
+target_link_libraries(partialtrack PUBLIC simpl)
 
 target_include_directories(partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/fftw-3.3.10/api")
 target_include_directories(partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/simpl")
