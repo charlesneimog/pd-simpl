@@ -7,3 +7,6 @@
 [submodule "Libraries/agsl"]
 	path = Libraries/agsl
 	url = https://github.com/ampl/gsl.git
+[submodule "Resources/pd.cmake"]
+	path = Resources/pd.cmake
+	url = https://github.com/pure-data/pd.cmake

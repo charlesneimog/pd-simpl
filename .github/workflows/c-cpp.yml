@@ -1,93 +1,146 @@
 name: C/C++ CI
 on:
+  workflow_dispatch:
   push:
     branches: ["master"]
   pull_request:
     branches: ["master"]
+env:
+  LIBNAME: partialtrack
 jobs:
   macos-universal-build:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+        precision: [32, 64] # TODO: We need to install PD64?
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
       - name: Install PureData and Deps
         run: |
           brew install --cask pd
-      - name: Build Object
-        run: "cmake . -B build\ncmake --build build -j $(sysctl -n hw.logicalcpu)\n      \n"
-      # - name: Make zip file
-      #   run: |
-      #     mkdir pd-partialtrack
-      #     cp *.d_amd64 pd-partialtrack
+          ls -l  /Applications/Pd*.app/Contents/Resources/src/
+          # Add here dynamic libraries that you use (ex. fftw3, gsl, ...).
+          # Search for the name in https://brew.sh/
+      - name: Build Object for Arm
+        if: ${{ matrix.arch == 'arm64' }}
+        run: |
+          cmake . -B build -DCMAKE_OSX_ARCHITECTURES=arm64 -DPD_FLOATSIZE=${{ matrix.precision }} -DPD_INSTALL_LIBS=True -DPDLIBDIR=./
+          cmake --build build -j $(sysctl -n hw.logicalcpu)
+      - name: Build Object for Intel
+        if: ${{ matrix.arch == 'amd64' }}
+        run: |
+          cmake . -B build -DPD_FLOATSIZE=${{ matrix.precision }} -DCMAKE_OSX_ARCHITECTURES=x86_64 -DPD_INSTALL_LIBS=True -DPDLIBDIR=./
+          cmake --build build -j $(sysctl -n hw.logicalcpu)
       - name: Upload Object
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: pd-partialtrack
-          path: pd-partialtrack
-          # ──────────────────────────────────────
+          name: ${{env.LIBNAME}}-macos-${{matrix.arch}}-${{matrix.precision}}
+          path: ${{env.LIBNAME}}
   windows-build:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        compiler: [mingw] # CHANGE: Choose between a compiler, you don't need boths
+        arch: [amd64]
+        precision: [32, 64]
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
-      - if: runner.os == 'Windows'
-        name: "Install mingw deps"
+      - if: matrix.compiler == 'mingw'
+        name: Set up Msys2
         uses: msys2/setup-msys2@v2
         with:
           msystem: mingw64
-          platform: x64
-          install: make autoconf automake libtool mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-cmake
+          install: make mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-cmake
           update: false
-      - name: Install PureData
+      # ──────────────────────────────────────
+      - name: Install winget
+        uses: Cyberboss/install-winget@v1
+      - name: Install PureData Float 32
+        if: matrix.precision == '32'
         run: |
-          choco install puredata --yes
-      - if: runner.os == 'Windows'
-        name: Build Object
+          winget install -e --id MillerPuckette.PureData --accept-source-agreements
+      - name: Install PureData Float 64
+        if: matrix.precision == '64'
+        run: |
+          winget install -e --id MillerPuckette.Pd64 --accept-source-agreements
+      - name: Configure and build
         shell: msys2 {0}
-        run: "cmake . -B build\ncmake --build build \n"
-      # - name: Move files to pd-partialtrack
-      #   run: |
-      #     mkdir pd-partialtrack
-      #     cp *.m_amd64 pd-partialtrack/
+        run: |
+          cmake . -B build -DPD_FLOATSIZE=${{ matrix.precision }} -DPD_INSTALL_LIBS=True -DPDLIBDIR=./
+          cmake --build build
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: pd-partialtrack
-          path: pd-partialtrack
-  #       # # # ===============================================================================================
-  #       # # # ===============================================================================================
-  #       # # # ===============================================================================================
-  # # build for Linux
+          name: ${{env.LIBNAME}}-f${{ matrix.precision }}-windows-${{ matrix.compiler }}
+          path: ${{env.LIBNAME}}
   linux-build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, aarch64, arm]
+        precision: [32, 64]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
       - name: PureData Sources
         run: |
-          curl -L -o pd.tar.gz https://msp.ucsd.edu/Software/pd-0.54-1.src.tar.gz
-          tar -xzf pd.tar.gz
-          rm pd.tar.gz
-          mv pd-* pure-data
-          sudo apt-get update
+          sudo apt update
           sudo add-apt-repository ppa:pure-data/pure-data -y
-          sudo apt-get install puredata -y
-      - name: Build Object
+          sudo apt install puredata -y
+      - name: Install aarch64 gcc
+        if: matrix.arch == 'aarch64'
         run: |
-          cmake . -B build
+          sudo apt install gcc-aarch64-linux-gnu -y
+          sudo apt install g++-aarch64-linux-gnu -y
+      - name: Install arm gcc
+        if: matrix.arch == 'arm'
+        run: |
+          sudo apt install gcc-arm-linux-gnueabihf -y
+          sudo apt install g++-arm-linux-gnueabihf -y
+      - name: Build Object
+        if: matrix.arch == 'amd64'
+        run: |
+          cmake . -B build -DPD_FLOATSIZE=${{ matrix.precision }} -DPD_INSTALL_LIBS=True -DPDLIBDIR=./
           cmake --build build -- -j$(nproc)
-      # - name: Make zip file
-      #   run: |
-      #     mkdir pd-partialtrack
-      #     cp *.l_amd64 pd-partialtrack
+      - name: Build Object
+        if: matrix.arch == 'aarch64'
+        run: |
+          cmake . -B build -DPD_FLOATSIZE=${{ matrix.precision }} -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DPD_INSTALL_LIBS=True -DPDLIBDIR=./
+          cmake --build build -- -j$(nproc)
+      - name: Build Object
+        if: matrix.arch == 'arm'
+        run: |
+          cmake . -B build -DPD_FLOATSIZE=${{ matrix.precision }} -DCMAKE_SYSTEM_PROCESSOR=arm -DPD_INSTALL_LIBS=True -DPDLIBDIR=./
+          cmake --build build -- -j$(nproc)
       - name: Upload Object
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: pd-partialtrack
-          path: pd-partialtrack
+          name: ${{ env.LIBNAME }}-linux-${{matrix.arch}}-${{matrix.precision}}
+          path: ${{env.LIBNAME}}
+  package-artifacts:
+    needs: [macos-universal-build, windows-build, linux-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '${{ env.LIBNAME }}-*'
+          path: artifacts
+          merge-multiple: true
+      - name: Clear tmp files
+        run: rm -f artifacts/*.pdb
+      - name: Upload artifacts zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{env.LIBNAME}}-ALL-binaries
+          path: artifacts
