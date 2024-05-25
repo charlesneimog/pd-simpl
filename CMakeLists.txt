@@ -44,6 +44,7 @@ file(ARCHIVE_EXTRACT
 add_subdirectory(Libraries/fftw-3.3.10)
 set_target_properties(fftw3 PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_target_properties(fftw3 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Libraries/fftw-3.3.10/api)
 
 #╭──────────────────────────────────────╮
 #│             Static Simpl             │

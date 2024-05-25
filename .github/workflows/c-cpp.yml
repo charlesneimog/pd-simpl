@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, arm64]
-        precision: [32, 64] # TODO: We need to install PD64?
+        precision: [32, 64]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,13 +21,13 @@ jobs:
           fetch-depth: 0
       - name: Install PureData and Deps
         run: |
-          brew install --cask pd
-          ls -l  /Applications/Pd*.app/Contents/Resources/src/
-          # Add here dynamic libraries that you use (ex. fftw3, gsl, ...).
-          # Search for the name in https://brew.sh/
+          brew install pd
       - name: Build Object for Arm
         if: ${{ matrix.arch == 'arm64' }}
         run: |
+          cd Libraries/agsl/ampl/thirdparty/asl
+          git checkout 2f5d9de
+          cd ../../../../..
           cmake . -B build -DCMAKE_OSX_ARCHITECTURES=arm64 -DPD_FLOATSIZE=${{ matrix.precision }} -DPD_INSTALL_LIBS=True -DPDLIBDIR=./
           cmake --build build -j $(sysctl -n hw.logicalcpu)
       - name: Build Object for Intel
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, aarch64, arm]
+        arch: [amd64]
         precision: [32, 64]
     steps:
       - uses: actions/checkout@v4
