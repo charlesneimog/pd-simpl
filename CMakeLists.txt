@@ -61,6 +61,10 @@ endif()
 file(GLOB EXTERNAL_SOURCES "${CMAKE_SOURCE_DIR}/Sources/*.cpp")
 add_pd_external(partialtrack ${EXTERNAL_SOURCES})
 
+add_datafile(partialtrack "${CMAKE_SOURCE_DIR}/Resources/helps/partialtrack-help.pd")
+add_datafile(partialtrack "${CMAKE_SOURCE_DIR}/Resources/helps/flute.wav")
+add_datafile(partialtrack "${CMAKE_SOURCE_DIR}/README.md")
+
 if (WIN32)
     target_link_options(partialtrack PRIVATE
 			"-Wl,-allow-multiple-definition"
