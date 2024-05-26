@@ -27,6 +27,7 @@ typedef struct _Peaks {
     t_int FrameSize;
     t_int BufferSize;
     t_int maxPeaks;
+    t_symbol *AnalPtrStr;
 
     t_sample *in;
     t_int audioInBlockIndex;
@@ -146,9 +147,8 @@ static void PeaksTick(t_Peaks *x) {
     t_atom args[1];
 
     char ptr[MAXPDSTRING];
-    sprintf(ptr, "%p", x->RealTimeData);
-    SETSYMBOL(&args[0], gensym(ptr));
-    outlet_anything(x->sigOut, gensym("simplObj"), 1, args);
+    SETSYMBOL(&args[0], x->AnalPtrStr);
+    outlet_anything(x->sigOut, gensym("PtObj"), 1, args);
 
     x->RealTimeData->Frame.clear_peaks();
     x->RealTimeData->Frame.clear_partials();
@@ -272,12 +272,13 @@ static void *NewPeaks(t_symbol *s, int argc, t_atom *argv) {
     x->in = new t_sample[x->BufferSize];
     x->done = 0;
 
-    // t_PtrPartialAnalysis *analPtr = newAnalisysPtr(x->FrameSize,
-    // x->BufferSize); post("[peaks~] Created new AnalysisData object %s",
-    // analPtr->x_sym);
+    x->AnalPtrStr = newAnalisysPtr(x->FrameSize, x->BufferSize);
 
-    // analisys
-    x->RealTimeData = new AnalysisData(x->FrameSize, x->BufferSize);
+    x->RealTimeData = getAnalisysPtr(x->AnalPtrStr);
+    if (x->RealTimeData == nullptr) {
+        pd_error(NULL, "[peaks~] Pointer not found");
+        return NULL;
+    }
     x->RealTimeData->PdMethod = pd;
     x->RealTimeData->PtMethod = pt;
     x->RealTimeData->SyMethod = sy;

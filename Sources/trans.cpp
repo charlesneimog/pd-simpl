@@ -188,9 +188,12 @@ static void SetExpantionPartials(t_Trans *x, t_float factor) {
 // ╰─────────────────────────────────────╯
 // =======================================
 static void Process(t_Trans *x, t_symbol *p) {
+    AnalysisData *Anal = getAnalisysPtr(p);
+    if (Anal == nullptr) {
+        pd_error(NULL, "[trans] Pointer not found");
+        return;
+    }
 
-    std::uintptr_t Ptr = std::strtoul(p->s_name, nullptr, 16);
-    AnalysisData *Anal = (AnalysisData *)Ptr;
     for (int i = 0; i < Anal->Frame.num_partials(); i++) {
         if (x->sIndex != 0)
             SilencePartials(x, Anal, i);
@@ -204,9 +207,8 @@ static void Process(t_Trans *x, t_symbol *p) {
 
     t_atom args[1];
     char ptr[MAXPDSTRING];
-    sprintf(ptr, "%p", Anal);
-    SETSYMBOL(&args[0], gensym(ptr));
-    outlet_anything(x->out, gensym("simplObj"), 1, args);
+    SETSYMBOL(&args[0], p);
+    outlet_anything(x->out, gensym("PtObj"), 1, args);
 }
 
 // ==============================================
@@ -234,6 +236,6 @@ void TransformationsSetup(void) {
                     gensym("amps"), A_FLOAT, A_FLOAT, A_FLOAT, 0);
     class_addmethod(Transformations, (t_method)ResetAll, gensym("reset"),
                     A_NULL, 0);
-    class_addmethod(Transformations, (t_method)Process, gensym("simplObj"),
+    class_addmethod(Transformations, (t_method)Process, gensym("PtObj"),
                     A_SYMBOL, 0);
 }

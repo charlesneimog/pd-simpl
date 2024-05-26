@@ -88,9 +88,11 @@ static void ConfigSynth(t_Synth *x, t_symbol *s, int argc, t_atom *argv) {
 
 // ==============================================
 static void SynthesisSymbol(t_Synth *x, t_symbol *p) {
-
-    std::uintptr_t Ptr = std::strtoul(p->s_name, nullptr, 16);
-    AnalysisData *Anal = (AnalysisData *)Ptr;
+    AnalysisData *Anal = getAnalisysPtr(p);
+    if (Anal == nullptr) {
+        pd_error(NULL, "[synth~] Pointer not found");
+        return;
+    }
 
     if (x->RealTimeData == nullptr) {
         x->RealTimeData = Anal;
@@ -141,42 +143,6 @@ static void SetMethods(t_Synth *x, t_symbol *sMethod, t_symbol *sName) {
         pd_error(NULL, "[s-synth~] This object just define the 'synth' method");
         return;
     }
-}
-
-// ==============================================
-static void Synthesis(t_Synth *x, t_gpointer *p) {
-    DEBUG_PRINT("[synth~] Starting Synthesis");
-    AnalysisData *Anal = (AnalysisData *)p;
-
-    if (x->RealTimeData == nullptr) {
-        x->RealTimeData = Anal;
-    }
-    if (x->updateConfig) {
-        UpdateSynthConfig(x, Anal);
-        x->updateConfig = false;
-    }
-
-    if (Anal->SyMethod != x->SyMethod) {
-        Anal->SyMethod = x->SyMethod;
-        Anal->error = false;
-    }
-
-    Anal->mtx.lock();
-    Anal->Synth();
-
-    int size = Anal->Frame.synth_size();
-    if (x->out == nullptr) {
-        x->out = new t_sample[size];
-        x->SynthBlockSize = size;
-    }
-
-    for (unsigned int i = 0; i < size; i++) {
-        x->out[i] = Anal->Frame.synth()[i];
-    }
-
-    Anal->mtx.unlock();
-    x->synthDone = 1;
-    DEBUG_PRINT("[synth~] Finished Synthesis\n"); // NOTE: End of the cycle
 }
 
 // ==============================================
@@ -231,8 +197,8 @@ void SynthSetup(void) {
     Synth = class_new(gensym("pt-synth~"), (t_newmethod)NewSynth, NULL,
                       sizeof(t_Synth), CLASS_DEFAULT, A_DEFSYMBOL, 0);
     class_addmethod(Synth, (t_method)SynthAddDsp, gensym("dsp"), A_CANT, 0);
-    class_addmethod(Synth, (t_method)SynthesisSymbol, gensym("simplObj"),
-                    A_SYMBOL, 0);
+    class_addmethod(Synth, (t_method)SynthesisSymbol, gensym("PtObj"), A_SYMBOL,
+                    0);
 
     class_addmethod(Synth, (t_method)SetMethods, gensym("set"), A_SYMBOL,
                     A_SYMBOL, 0);
