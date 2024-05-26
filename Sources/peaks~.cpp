@@ -28,6 +28,7 @@ typedef struct _Peaks {
     t_int BufferSize;
     t_int maxPeaks;
     t_symbol *AnalPtrStr;
+    t_PtrPartialAnalysis *DataObj;
 
     t_sample *in;
     t_int audioInBlockIndex;
@@ -146,7 +147,6 @@ static void SetMaxPartials(t_Peaks *x, t_float f) {
 static void PeaksTick(t_Peaks *x) {
     t_atom args[1];
 
-    char ptr[MAXPDSTRING];
     SETSYMBOL(&args[0], x->AnalPtrStr);
     outlet_anything(x->sigOut, gensym("PtObj"), 1, args);
 
@@ -161,14 +161,11 @@ static void PartialTrackingProcessor(t_Peaks *x) {
 
     AnalysisData *Anal = (AnalysisData *)x->RealTimeData;
 
-    Anal->mtx.lock();
-
     float *in = (float *)x->in;
     std::copy(in, in + x->BufferSize, Anal->audio.begin());
     Anal->Frame.audio(&(Anal->audio[0]), x->BufferSize);
     Anal->PeakDectection();
     Anal->PartialTracking();
-    Anal->mtx.unlock();
 
     clock_delay(x->x_clock, 0);
     DEBUG_PRINT("[peaks~] Finished PartialTracking");
@@ -272,7 +269,8 @@ static void *NewPeaks(t_symbol *s, int argc, t_atom *argv) {
     x->in = new t_sample[x->BufferSize];
     x->done = 0;
 
-    x->AnalPtrStr = newAnalisysPtr(x->FrameSize, x->BufferSize);
+    x->DataObj = newAnalisysPtr(x->FrameSize, x->BufferSize);
+    x->AnalPtrStr = x->DataObj->x_sym;
 
     x->RealTimeData = getAnalisysPtr(x->AnalPtrStr);
     if (x->RealTimeData == nullptr) {
@@ -285,6 +283,14 @@ static void *NewPeaks(t_symbol *s, int argc, t_atom *argv) {
 
     DEBUG_PRINT("[peaks~] Object created");
     return (void *)x;
+}
+// ==============================================
+void DeletePeaks(t_Peaks *x) {
+    killAnalisysPtr(x->DataObj);
+    delete x->DataObj;
+    delete x->RealTimeData;
+    delete x->in;
+    clock_free(x->x_clock);
 }
 
 // ==============================================

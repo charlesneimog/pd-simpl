@@ -8,9 +8,6 @@
 
 #include <m_pd.h>
 
-#include <mutex>
-#include <thread>
-
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <simpl.h> // TODO: Need to fix this
 #pragma GCC diagnostic warning "-Wdeprecated-declarations"
@@ -28,7 +25,6 @@ class AnalysisData {
     bool error = false;
     const int max_peaks;
     std::vector<double> audio;
-    std::mutex mtx;
     simpl::Frame Frame;
     std::string PdMethod;
     std::string PtMethod;
@@ -111,7 +107,6 @@ typedef struct _pdsimpl {
     simpl::PartialTracking *PT;
     simpl::Synthesis *Synth;
     simpl::Frame *Frame;
-    std::mutex mtx;
     int hop_size;
     int max_peaks;
     int frame_size;
@@ -138,7 +133,7 @@ typedef struct _PtrPartialAnalysis {
     AnalysisData *x_data;
 } t_PtrPartialAnalysis;
 
-t_symbol *newAnalisysPtr(int frameSize, int bufferSize);
+t_PtrPartialAnalysis *newAnalisysPtr(int frameSize, int bufferSize);
 void killAnalisysPtr(t_PtrPartialAnalysis *x);
 AnalysisData *getAnalisysPtr(t_symbol *s);
 

@@ -107,7 +107,6 @@ static void SynthesisSymbol(t_Synth *x, t_symbol *p) {
         Anal->error = false;
     }
 
-    Anal->mtx.lock();
     Anal->Synth();
 
     int size = Anal->Frame.synth_size();
@@ -120,7 +119,6 @@ static void SynthesisSymbol(t_Synth *x, t_symbol *p) {
         x->out[i] = Anal->Frame.synth()[i];
     }
 
-    Anal->mtx.unlock();
     x->synthDone = 1;
     DEBUG_PRINT("[synth~] Finished Synthesis\n"); // NOTE: End of the cycle
 }

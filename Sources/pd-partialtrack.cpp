@@ -22,7 +22,7 @@ void AnalysisData::PeakDectection() {
     } else if (PdMethod == "mq") {
         PdMQ.find_peaks_in_frame(&Frame);
     } else {
-        pd_error(NULL, "[simpl] Unknown Peak Detection method");
+        pd_error(NULL, "[partialtrack] Unknown Peak Detection method");
         error = true;
     }
 }
@@ -42,7 +42,7 @@ void AnalysisData::PartialTracking() {
     } else if (PtMethod == "mq") {
         PtMQ.update_partials(&Frame);
     } else {
-        pd_error(NULL, "[simpl] Unknown PartialTracking method");
+        pd_error(NULL, "[partialtrack] Unknown PartialTracking method");
         error = true;
     }
 }
@@ -61,7 +61,7 @@ void AnalysisData::Synth() {
     } else if (SyMethod == "mq") {
         SynthMQ.synth_frame(&Frame);
     } else {
-        pd_error(NULL, "[simpl] Unknown Synth method");
+        pd_error(NULL, "[partialtrack] Unknown Synth method");
         error = true;
     }
     if (residual) {
@@ -82,7 +82,7 @@ void partialtrack_setup(void) {
     int major, minor, micro;
     sys_getversion(&major, &minor, &micro);
     if (major < 0 && minor < 54) {
-        pd_error(NULL, "[simpl] You need to use Pd 0.54 or higher");
+        pd_error(NULL, "[partialtrack] You need to use Pd 0.54 or higher");
         return;
     }
 
@@ -90,7 +90,7 @@ void partialtrack_setup(void) {
     post("");
     post("[partialtrack] by Charles K. Neimog");
     post("[partialtrack] it uses simpl by John Glover");
-    post("[partialtrack] version %d.%d.%d", 0, 0, 1);
+    post("[partialtrack] version %d.%d", 0, 1);
     post("");
 #endif
 
