@@ -1,6 +1,11 @@
 #ifndef PARTIALTRACK_H
 #define PARTIALTRACK_H
 
+// check if it is a windows build
+#ifdef _WIN32
+#define PI = M_PI
+#endif
+
 #include <m_pd.h>
 
 #include <mutex>
