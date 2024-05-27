@@ -1,5 +1,4 @@
-#include "pd-partialtrack.hpp"
-#include <m_pd.h>
+#include "partialtrack.hpp"
 
 static t_class *Synth;
 

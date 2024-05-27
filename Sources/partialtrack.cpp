@@ -1,4 +1,4 @@
-#include "pd-partialtrack.hpp"
+#include "partialtrack.hpp"
 
 #if defined(_LANGUAGE_C_PLUS_PLUS) || defined(__cplusplus)
 extern "C" {

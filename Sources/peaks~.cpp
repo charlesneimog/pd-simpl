@@ -1,4 +1,4 @@
-#include "pd-partialtrack.hpp"
+#include "partialtrack.hpp"
 
 static t_class *PeaksDetection;
 #define MAX_SILENCED_PARTIALS 127

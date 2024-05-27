@@ -1,4 +1,4 @@
-#include "pd-partialtrack.hpp"
+#include "partialtrack.hpp"
 
 static t_class *AnalysisPtr;
 
