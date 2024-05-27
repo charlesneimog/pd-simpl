@@ -1,8 +1,15 @@
 # partialtrack
 
-`partialtrack` is a library that works for PureData, it is a real-time partial tracking library based on the work of John Glover.
+Welcome to `partialtrack`, a real-time partial tracking library designed for PureData, inspired by the work of John Glover.
 
+## Overview
 
+`partialtrack` enables you to perform various manipulations on audio signals in real-time within the PureData environment. Some of the functionalities include: 
+    * Transposition;
+    * Frequency filtering; 
+    * Harmonic Spectrum Manipulation;
+
+It allows you to shape and sculpt your sounds precisely.
 
 ## Sounds
 

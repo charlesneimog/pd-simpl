@@ -3,8 +3,12 @@ on:
   workflow_dispatch:
   push:
     branches: ["master"]
+    paths:
+      - '**/*.cpp'
   pull_request:
     branches: ["master"]
+    paths:
+      - '**/*.cpp'
 env:
   LIBNAME: partialtrack
 jobs:

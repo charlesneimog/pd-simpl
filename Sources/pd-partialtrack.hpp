@@ -25,11 +25,17 @@ class AnalysisData {
     bool error = false;
     const int max_peaks;
     std::vector<double> audio;
+
+    simpl::Frames Frames;
     simpl::Frame Frame;
+
     std::string PdMethod;
     std::string PtMethod;
     std::string SyMethod;
     bool residual = false;
+
+    // ────────────── Offline ───────────
+    bool offline = false;
 
     // ─────────── PeakDetection ────────
     simpl::SndObjPeakDetection PdSnd;
@@ -55,8 +61,15 @@ class AnalysisData {
     // ────────────── Methods ───────────
     void set_max_peaks(int max_peaks);
     void PeakDectection();
+    void PeakDectectionFrames(int audioSize, double *audio);
+
+    // ------
     void PartialTracking();
+    void PartialTrackingFrames();
+
+    // ------
     void Synth();
+    void SynthFrames();
 
     // ──────────── Initializer ─────────
     AnalysisData(int frame_size, int hop_size)

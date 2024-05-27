@@ -21,6 +21,10 @@ typedef struct _Synth { // It seems that all the objects are some kind of
     // Loris config
     float bandwidth;
 
+    // Offline Mode
+    bool offline;
+    t_symbol *ArrayName;
+
     // Frames
     AnalysisData *RealTimeData;
     int blockPosition;
@@ -87,12 +91,71 @@ static void ConfigSynth(t_Synth *x, t_symbol *s, int argc, t_atom *argv) {
 }
 
 // ==============================================
+static void OfflineMode(t_Synth *x, t_float f) {
+    if (f == 0) {
+        x->offline = false;
+    } else {
+        x->offline = true;
+    }
+}
+
+// ==============================================
+static void ProcessOffline(t_Synth *x, t_symbol *p) {
+    AnalysisData *Anal = getAnalisysPtr(p);
+    if (Anal == nullptr) {
+        pd_error(NULL, "[synth~] Pointer not found");
+        return;
+    }
+    if (Anal->SyMethod != x->SyMethod) {
+        Anal->SyMethod = x->SyMethod;
+        Anal->error = false;
+    }
+
+    Anal->SynthFrames();
+
+    std::vector<float> audio;
+    int FramesSize = Anal->Frames.size();
+
+    for (int i = 0; i < FramesSize; i++) {
+        for (int j = 0; j < Anal->Frame.synth_size(); j++) {
+            audio.push_back(Anal->Frames[i]->synth()[j]);
+        }
+    }
+
+    // write in array the audio
+    if (x->ArrayName != nullptr) {
+        t_garray *array;
+        int vecsize;
+        t_word *vec;
+        if (!(array = (t_garray *)pd_findbyclass(x->ArrayName, garray_class))) {
+            pd_error(NULL, "[synth~] Array [%s] not found",
+                     x->ArrayName->s_name);
+            return;
+        } else if (!garray_getfloatwords(array, &vecsize, &vec)) {
+            pd_error(x, "[synth~] Bad template for tabwrite '%s'.",
+                     x->ArrayName->s_name);
+            return;
+        }
+        if (vecsize < audio.size()) {
+            garray_resize_long(array, audio.size());
+            garray_getfloatwords(array, &vecsize, &vec);
+        }
+        for (int i = 0; i < audio.size(); i++) {
+            vec[i].w_float = audio[i];
+        }
+        garray_redraw(array);
+    }
+    post("[synth~] Finished Synthesis");
+}
+
+// ==============================================
 static void SynthesisSymbol(t_Synth *x, t_symbol *p) {
     AnalysisData *Anal = getAnalisysPtr(p);
     if (Anal == nullptr) {
         pd_error(NULL, "[synth~] Pointer not found");
         return;
     }
+    int size = Anal->Frame.synth_size();
 
     if (x->RealTimeData == nullptr) {
         x->RealTimeData = Anal;
@@ -107,17 +170,40 @@ static void SynthesisSymbol(t_Synth *x, t_symbol *p) {
         Anal->error = false;
     }
 
+    if (x->offline) {
+        Anal->Synth();
+        int size = Anal->Frame.synth_size();
+        if (x->out == nullptr) {
+            x->out = new t_sample[size];
+            x->SynthBlockSize = size;
+        }
+        t_garray *array;
+        int vecsize;
+        t_word *vec;
+        if (!(array = (t_garray *)pd_findbyclass(x->ArrayName, garray_class))) {
+            pd_error(NULL, "[synth~] Array [%s] not found",
+                     x->ArrayName->s_name);
+            return;
+        } else if (!garray_getfloatwords(array, &vecsize, &vec)) {
+            pd_error(x, "[synth~] Bad template for tabwrite '%s'.",
+                     x->ArrayName->s_name);
+            return;
+        }
+        size = Anal->Frame.synth_size();
+
+        return;
+    }
+
     Anal->Synth();
 
-    int size = Anal->Frame.synth_size();
+    size = Anal->Frame.synth_size();
+
     if (x->out == nullptr) {
         x->out = new t_sample[size];
         x->SynthBlockSize = size;
     }
 
-    for (unsigned int i = 0; i < size; i++) {
-        x->out[i] = Anal->Frame.synth()[i];
-    }
+    std::copy(Anal->Frame.synth(), Anal->Frame.synth() + size, x->out);
 
     x->synthDone = 1;
     DEBUG_PRINT("[synth~] Finished Synthesis\n"); // NOTE: End of the cycle
@@ -149,6 +235,10 @@ static t_int *SynthAudioPerform(t_int *w) {
     t_sample *out = (t_sample *)(w[2]);
     int n = (int)(w[3]);
     int i;
+
+    if (x->offline) {
+        return (w + 4);
+    }
 
     // error
     if (!x->synthDone) {
@@ -182,10 +272,27 @@ static void SynthAddDsp(t_Synth *x, t_signal **sp) {
 }
 
 // ==============================================
-static void *NewSynth(t_symbol *synth) {
+static void *NewSynth(t_symbol *s, int argc, t_atom *argv) {
     t_Synth *x = (t_Synth *)pd_new(Synth);
     x->outlet = outlet_new(&x->xObj, &s_signal);
     x->SyMethod = "sms";
+
+    for (int i = 0; i < argc; i++) {
+        if (argv[i].a_type == A_SYMBOL) {
+            std::string arg = atom_getsymbolarg(i, argc, argv)->s_name;
+            t_symbol *s = atom_getsymbolarg(i, argc, argv);
+            if (arg == "-offline") {
+                x->offline = true;
+                i++;
+                if (i < argc) {
+                    x->ArrayName = atom_getsymbolarg(i, argc, argv);
+                } else {
+                    pd_error(NULL, "[synth~] No array name defined");
+                }
+            }
+        }
+    }
+
     DEBUG_PRINT("[synth~] New Synth");
     return x;
 }
@@ -193,13 +300,18 @@ static void *NewSynth(t_symbol *synth) {
 // ==============================================
 void SynthSetup(void) {
     Synth = class_new(gensym("pt-synth~"), (t_newmethod)NewSynth, NULL,
-                      sizeof(t_Synth), CLASS_DEFAULT, A_DEFSYMBOL, 0);
+                      sizeof(t_Synth), CLASS_DEFAULT, A_GIMME, 0);
     class_addmethod(Synth, (t_method)SynthAddDsp, gensym("dsp"), A_CANT, 0);
-    class_addmethod(Synth, (t_method)SynthesisSymbol, gensym("PtObj"), A_SYMBOL,
-                    0);
 
     class_addmethod(Synth, (t_method)SetMethods, gensym("set"), A_SYMBOL,
                     A_SYMBOL, 0);
 
     class_addmethod(Synth, (t_method)ConfigSynth, gensym("cfg"), A_GIMME, 0);
+    class_addmethod(Synth, (t_method)OfflineMode, gensym("offline"), A_FLOAT,
+                    0);
+
+    class_addmethod(Synth, (t_method)SynthesisSymbol, gensym("PtObj"), A_SYMBOL,
+                    0);
+    class_addmethod(Synth, (t_method)ProcessOffline, gensym("PtObjFrames"),
+                    A_SYMBOL, 0);
 }

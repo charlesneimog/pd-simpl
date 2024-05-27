@@ -18,6 +18,7 @@ typedef struct _Peaks {
 
     // Config
     t_int fr_resources = 0;
+    bool offline;
 
     // clock
     t_clock *x_clock;
@@ -104,6 +105,15 @@ static void SetMethods(t_Peaks *x, t_symbol *sMethod, t_symbol *sName) {
 }
 
 // ==============================================
+static void OfflineMode(t_Peaks *x, t_float f) {
+    if (f == 0) {
+        x->offline = false;
+    } else {
+        x->offline = true;
+    }
+}
+
+// ==============================================
 static void SetDetached(t_Peaks *x, t_float f) {
     if (f == 0) {
         x->detached = false;
@@ -124,15 +134,17 @@ static void SetConfigs(t_Peaks *x, t_symbol *s, int argc, t_atom *argv) {
         x->fr_resources = atom_getintarg(1, argc, argv);
         post("[peaks~] I will not process when audio is 0");
     } else if (method == "peak") {
-
+        x->RealTimeData->PdMethod = atom_getsymbolarg(1, argc, argv)->s_name;
     } else if (method == "partial") {
-
+        x->RealTimeData->PtMethod = atom_getsymbolarg(1, argc, argv)->s_name;
     } else if (method == "harmonic") {
-
+        // TODO:
+        pd_error(NULL, "[peaks~] This method is not implemented yet");
     } else if (method == "fundamental") {
+        pd_error(NULL, "[peaks~] This method is not implemented yet");
+    } else {
+        pd_error(NULL, "[peaks~] Unknown configuration method");
     }
-
-    //
 
     return;
 }
@@ -172,11 +184,48 @@ static void PartialTrackingProcessor(t_Peaks *x) {
 }
 
 // ==============================================
+static void OfflineExecute(t_Peaks *x, t_symbol *s) {
+    x->offline = true;
+    t_garray *array;
+    int vecsize;
+    t_word *vec;
+
+    if (!(array = (t_garray *)pd_findbyclass(s, garray_class))) {
+        pd_error(x, "[Python] Array %s not found.", s->s_name);
+        return;
+    } else if (!garray_getfloatwords(array, &vecsize, &vec)) {
+        pd_error(x, "[Python] Bad template for tabwrite '%s'.", s->s_name);
+        return;
+    }
+
+    int nWindows = round(vecsize / x->BufferSize);
+
+    double *in = new double[vecsize];
+    for (int i = 0; i < vecsize; i++) {
+        in[i] = vec[i].w_float;
+    }
+
+    x->RealTimeData->PeakDectectionFrames(vecsize, in);
+    x->RealTimeData->PartialTrackingFrames();
+
+    t_atom args[1];
+    SETSYMBOL(&args[0], x->AnalPtrStr);
+    outlet_anything(x->sigOut, gensym("PtObjFrames"), 1, args);
+
+    return;
+}
+
+// ==============================================
 static t_int *PeaksAudioPerform(t_int *w) {
     t_Peaks *x = (t_Peaks *)(w[1]);
     t_sample *in = (t_sample *)(w[2]);
     int n = (int)(w[3]);
     x->n = n;
+
+    if (x->offline) {
+        // TODO: way to disable this
+        return (w + 4);
+    }
 
     if (x->fr_resources) {
         // check if audio sum is zero
@@ -248,6 +297,8 @@ static void *NewPeaks(t_symbol *s, int argc, t_atom *argv) {
                 i++;
                 x->BufferSize = atom_getfloatarg(i, argc, argv);
                 hopDefined = true;
+            } else if (arg == "-offline") {
+                x->offline = true;
             }
         }
     }
@@ -281,8 +332,7 @@ static void *NewPeaks(t_symbol *s, int argc, t_atom *argv) {
     x->RealTimeData->PtMethod = pt;
     x->RealTimeData->SyMethod = sy;
 
-    DEBUG_PRINT("[peaks~] Object created");
-    return (void *)x;
+    return x;
 }
 // ==============================================
 void DeletePeaks(t_Peaks *x) {
@@ -297,16 +347,19 @@ void DeletePeaks(t_Peaks *x) {
 void PeakSetup(void) {
     PeaksDetection = class_new(gensym("pt-peaks~"), (t_newmethod)NewPeaks, NULL,
                                sizeof(t_Peaks), CLASS_DEFAULT, A_GIMME, 0);
-
     CLASS_MAINSIGNALIN(PeaksDetection, t_Peaks, xSample);
     class_addmethod(PeaksDetection, (t_method)PeaksAddDsp, gensym("dsp"),
                     A_CANT, 0);
+    class_addmethod(PeaksDetection, (t_method)OfflineExecute, gensym("tab"),
+                    A_SYMBOL, 0);
     class_addmethod(PeaksDetection, (t_method)SetDetached, gensym("detached"),
                     A_FLOAT, 0);
     class_addmethod(PeaksDetection, (t_method)SetConfigs, gensym("set"),
                     A_GIMME, 0);
     class_addmethod(PeaksDetection, (t_method)ConfigPartialTracking,
                     gensym("ptcfg"), A_GIMME, 0);
+    class_addmethod(PeaksDetection, (t_method)OfflineMode, gensym("offline"),
+                    A_FLOAT, 0);
 
     //
 }

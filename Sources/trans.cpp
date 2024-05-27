@@ -48,8 +48,8 @@ static double transFreq(double originalFrequency, double cents) {
 // │           Process Helpers           │
 // ╰─────────────────────────────────────╯
 //  ======================================
-static void Transpose(t_Trans *x, AnalysisData *Anal, int i) {
-    simpl::Peak *Peak = Anal->Frame.partial(i);
+static void Transpose(t_Trans *x, simpl::Frame *Frame, int i) {
+    simpl::Peak *Peak = Frame->partial(i);
     if (Peak != nullptr) {
         if (Peak->frequency == 0) {
             return;
@@ -66,8 +66,8 @@ static void Transpose(t_Trans *x, AnalysisData *Anal, int i) {
 }
 
 //  ======================================
-static void ChangeAmps(t_Trans *x, AnalysisData *Anal, int i) {
-    simpl::Peak *Peak = Anal->Frame.partial(i);
+static void ChangeAmps(t_Trans *x, simpl::Frame *Frame, int i) {
+    simpl::Peak *Peak = Frame->partial(i);
     if (Peak != nullptr) {
         if (Peak->frequency == 0) {
             return;
@@ -82,8 +82,8 @@ static void ChangeAmps(t_Trans *x, AnalysisData *Anal, int i) {
     }
 }
 // ==============================================
-static void Expand(t_Trans *x, AnalysisData *Anal, int i) {
-    simpl::Peak *Peak = Anal->Frame.partial(i);
+static void Expand(t_Trans *x, simpl::Frame *Frame, int i) {
+    simpl::Peak *Peak = Frame->partial(i);
     if (i == 0) {
         if (Peak != nullptr) {
             x->ePrevFreq = Peak->frequency;
@@ -103,9 +103,9 @@ static void Expand(t_Trans *x, AnalysisData *Anal, int i) {
 }
 
 // ==============================================
-static void SilencePartials(t_Trans *x, AnalysisData *Anal, int i) {
+static void SilencePartials(t_Trans *x, simpl::Frame *Frame, int i) {
     // TODO: Fix
-    simpl::Peak *Peak = Anal->Frame.partial(i);
+    simpl::Peak *Peak = Frame->partial(i);
     if (Peak != nullptr) {
         if (Peak->frequency >= x->sLowNote[i] &&
             Peak->frequency <= x->sHighNote[i]) {
@@ -183,6 +183,36 @@ static void SetExpantionPartials(t_Trans *x, t_float factor) {
 }
 
 // =======================================
+static void ProcessOffline(t_Trans *x, t_symbol *p) {
+    AnalysisData *Anal = getAnalisysPtr(p);
+    if (Anal == nullptr) {
+        pd_error(NULL, "[trans] Pointer not found");
+        return;
+    }
+
+    simpl::Frames Frames = Anal->Frames;
+    for (int i = 0; i < Frames.size(); i++) {
+        simpl::Frame *Frame = Frames[i];
+        for (int i = 0; i < Frame->num_partials(); i++) {
+            if (x->sIndex != 0)
+                SilencePartials(x, Frame, i);
+            if (x->tIndex != 0)
+                Transpose(x, Frame, i);
+            if (x->eFactor != 1.0)
+                Expand(x, Frame, i);
+            if (x->aIndex != 0)
+                ChangeAmps(x, Frame, i);
+        }
+    }
+
+    t_atom args[1];
+    SETSYMBOL(&args[0], p);
+    outlet_anything(x->out, gensym("PtObjFrames"), 1, args);
+
+    return;
+}
+
+// =======================================
 // ╭─────────────────────────────────────╮
 // │        Partial Manipulations        │
 // ╰─────────────────────────────────────╯
@@ -194,15 +224,20 @@ static void Process(t_Trans *x, t_symbol *p) {
         return;
     }
 
+    if (Anal->offline) {
+        pd_error(nullptr, "[trans] Offline mode");
+        return;
+    }
+
     for (int i = 0; i < Anal->Frame.num_partials(); i++) {
         if (x->sIndex != 0)
-            SilencePartials(x, Anal, i);
+            SilencePartials(x, &Anal->Frame, i);
         if (x->tIndex != 0)
-            Transpose(x, Anal, i);
+            Transpose(x, &Anal->Frame, i);
         if (x->eFactor != 1.0)
-            Expand(x, Anal, i);
+            Expand(x, &Anal->Frame, i);
         if (x->aIndex != 0)
-            ChangeAmps(x, Anal, i);
+            ChangeAmps(x, &Anal->Frame, i);
     }
 
     t_atom args[1];
@@ -238,4 +273,6 @@ void TransformationsSetup(void) {
                     A_NULL, 0);
     class_addmethod(Transformations, (t_method)Process, gensym("PtObj"),
                     A_SYMBOL, 0);
+    class_addmethod(Transformations, (t_method)ProcessOffline,
+                    gensym("PtObjFrames"), A_SYMBOL, 0);
 }
