@@ -17,10 +17,10 @@ typedef struct _Sget {
 } Sget;
 
 // ─────────────────────────────────────
-static void GetValues(Sget *x, t_gpointer *p) {
-    t_pdsimpl *Simpl = (t_pdsimpl *)p;
-    for (int i = 0; i < Simpl->Frame->num_partials(); i++) {
-        simpl::Peak *Peak = Simpl->Frame->partial(i);
+static void GetValues(Sget *x, t_symbol *p) {
+    AnalysisData *Anal = getAnalisysPtr(p);
+    for (int i = 0; i < Anal->Frame.num_partials(); i++) {
+        simpl::Peak *Peak = Anal->Frame.partial(i);
         if (Peak != nullptr) {
             t_atom args[4];
             if (x->PeaksOut) {
@@ -64,6 +64,6 @@ static void *New_Sget(t_symbol *s, int argc, t_atom *argv) {
 void s_get_setup(void) {
     S_get = class_new(gensym("s-get"), (t_newmethod)New_Sget, NULL,
                       sizeof(Sget), CLASS_DEFAULT, A_GIMME, 0);
-    class_addmethod(S_get, (t_method)GetValues, gensym("simplObj"), A_POINTER,
+    class_addmethod(S_get, (t_method)GetValues, gensym("simplObj"), A_SYMBOL,
                     0);
 }

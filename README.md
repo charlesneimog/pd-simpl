@@ -5,9 +5,10 @@ Welcome to `partialtrack`, a real-time partial tracking library designed for Pur
 ## Overview
 
 `partialtrack` enables you to perform various manipulations on audio signals in real-time within the PureData environment. Some of the functionalities include: 
-    * Transposition;
-    * Frequency filtering; 
-    * Harmonic Spectrum Manipulation;
+
+* Transposition;
+* Frequency filtering; 
+* Harmonic Spectrum Manipulation;
 
 It allows you to shape and sculpt your sounds precisely.
 
@@ -15,4 +16,5 @@ It allows you to shape and sculpt your sounds precisely.
 
 There is some sounds in `Resources` folders, they are under Creative Commons License.
 
-* `flute.wav`: Downloaded from [freesound](https://freesound.org/people/MTG/sounds/246579/), sound by MTG.
+* `flute-A4.wav`: Downloaded from <a href="https://freesound.org/people/MTG/sounds/246658/">Freesound</a> by <a href="https://freesound.org/people/MTG/">MTG</a> | License: <a href="http://creativecommons.org/licenses/by/3.0/">Attribution 3.0</a>
+* `violin-A4.wav`: Downloaded from <a href="https://freesound.org/people/MTG/sounds/247409/">Freesound</a> by <a href="https://freesound.org/people/MTG/">MTG</a> | License: <a href="http://creativecommons.org/licenses/by/3.0/">Attribution 3.0</a>

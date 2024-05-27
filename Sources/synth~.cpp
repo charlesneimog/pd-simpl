@@ -24,9 +24,20 @@ typedef struct _Synth { // It seems that all the objects are some kind of
     bool offline;
     t_symbol *ArrayName;
 
+    // freeze
+    bool freeze;
+    unsigned int freezeFrame;
+    std::vector<float> freezeAudio;
+
+    simpl::Frame PreviousFrame;
+    simpl::Frame CurrentFrame;
+
     // Frames
     AnalysisData *RealTimeData;
     int blockPosition;
+
+    // Options
+    float speed;
 
     // Outlet/Inlet
     t_outlet *outlet;
@@ -99,6 +110,16 @@ static void OfflineMode(t_Synth *x, t_float f) {
 }
 
 // ==============================================
+static void FreezeMode(t_Synth *x, t_float f) {
+    if (f == 0) {
+        x->freeze = false;
+    } else {
+        x->freeze = true;
+        post("[synth~] Freeze Synth Mode enabled");
+    }
+}
+
+// ==============================================
 static void ProcessOffline(t_Synth *x, t_symbol *p) {
     AnalysisData *Anal = getAnalisysPtr(p);
     if (Anal == nullptr) {
@@ -108,6 +129,10 @@ static void ProcessOffline(t_Synth *x, t_symbol *p) {
     if (Anal->SyMethod != x->SyMethod) {
         Anal->SyMethod = x->SyMethod;
         Anal->error = false;
+    }
+
+    if (x->speed != 1) {
+        Anal->SetHopSize(Anal->HopSize / x->speed);
     }
 
     Anal->SynthFrames();
@@ -169,30 +194,6 @@ static void SynthesisSymbol(t_Synth *x, t_symbol *p) {
         Anal->error = false;
     }
 
-    if (x->offline) {
-        Anal->Synth();
-        int size = Anal->Frame.synth_size();
-        if (x->out == nullptr) {
-            x->out = new t_sample[size];
-            x->SynthBlockSize = size;
-        }
-        t_garray *array;
-        int vecsize;
-        t_word *vec;
-        if (!(array = (t_garray *)pd_findbyclass(x->ArrayName, garray_class))) {
-            pd_error(NULL, "[synth~] Array [%s] not found",
-                     x->ArrayName->s_name);
-            return;
-        } else if (!garray_getfloatwords(array, &vecsize, &vec)) {
-            pd_error(x, "[synth~] Bad template for tabwrite '%s'.",
-                     x->ArrayName->s_name);
-            return;
-        }
-        size = Anal->Frame.synth_size();
-
-        return;
-    }
-
     Anal->Synth();
 
     size = Anal->Frame.synth_size();
@@ -209,23 +210,50 @@ static void SynthesisSymbol(t_Synth *x, t_symbol *p) {
 }
 
 // ==============================================
-static void SetMethods(t_Synth *x, t_symbol *sMethod, t_symbol *sName) {
-    std::string method = sMethod->s_name;
-    std::string name = sName->s_name;
-    std::string validMethods[] = {"sms", "loris", "mq", "sndobj"};
-
-    // check if the method is valid
-    if (std::find(std::begin(validMethods), std::end(validMethods), name) ==
-        std::end(validMethods)) {
-        pd_error(NULL, "[peaks~] Unknown method");
+static void SetMethods(t_Synth *x, t_symbol *s, int argc, t_atom *argv) {
+    if (argc < 2) {
+        pd_error(NULL, "[peaks~] Missing arguments");
         return;
     }
+
+    if (argv[0].a_type != A_SYMBOL) {
+        pd_error(NULL, "[peaks~] Invalid arguments");
+        return;
+    }
+
+    std::string method = atom_getsymbolarg(0, argc, argv)->s_name;
+
     if (method == "synth") {
+        std::string name = atom_getsymbolarg(1, argc, argv)->s_name;
+        std::string validMethods[] = {"sms", "loris", "mq", "sndobj"};
+        if (std::find(std::begin(validMethods), std::end(validMethods), name) ==
+            std::end(validMethods)) {
+            pd_error(NULL, "[peaks~] Unknown method");
+            return;
+        }
         x->SyMethod = name;
+    } else if (method == "speed") {
+        x->speed = atom_getfloatarg(1, argc, argv);
+    } else if (method == "freezedframe") {
+        x->freezeFrame = atom_getfloatarg(1, argc, argv);
     } else {
         pd_error(NULL, "[s-synth~] This object just define the 'synth' method");
         return;
     }
+}
+
+// ==============================================
+void FreezeSynth(t_Synth *x) {
+    simpl::Frame *Frame = x->RealTimeData->Frames[x->freezeFrame];
+    simpl::Frame *NextFrame = x->RealTimeData->Frames[x->freezeFrame];
+
+    simpl::Frames Frames(2);
+    Frames.push_back(Frame);
+    Frames.push_back(NextFrame);
+
+    x->RealTimeData->SynthFreezedFrames(Frames);
+
+    std::vector<float> audio;
 }
 
 // ==============================================
@@ -234,6 +262,17 @@ static t_int *SynthAudioPerform(t_int *w) {
     t_sample *out = (t_sample *)(w[2]);
     int n = (int)(w[3]);
     int i;
+
+    if (x->freeze) {
+        if (x->freezeFrame == -1 || x->RealTimeData == nullptr) {
+            return (w + 4);
+        }
+        if (x->RealTimeData->Frames.size() < x->freezeFrame) {
+            post("here");
+            return (w + 4);
+        }
+        post("here");
+    }
 
     if (x->offline) {
         return (w + 4);
@@ -292,6 +331,11 @@ static void *NewSynth(t_symbol *s, int argc, t_atom *argv) {
         }
     }
 
+    // default config
+    x->speed = 1;
+    x->freeze = false;
+    x->freezeFrame = -1;
+
     DEBUG_PRINT("[synth~] New Synth");
     return x;
 }
@@ -302,12 +346,12 @@ void SynthSetup(void) {
                       sizeof(t_Synth), CLASS_DEFAULT, A_GIMME, 0);
     class_addmethod(Synth, (t_method)SynthAddDsp, gensym("dsp"), A_CANT, 0);
 
-    class_addmethod(Synth, (t_method)SetMethods, gensym("set"), A_SYMBOL,
-                    A_SYMBOL, 0);
+    class_addmethod(Synth, (t_method)SetMethods, gensym("set"), A_GIMME, 0);
 
     class_addmethod(Synth, (t_method)ConfigSynth, gensym("cfg"), A_GIMME, 0);
     class_addmethod(Synth, (t_method)OfflineMode, gensym("offline"), A_FLOAT,
                     0);
+    class_addmethod(Synth, (t_method)FreezeMode, gensym("freeze"), A_FLOAT, 0);
 
     class_addmethod(Synth, (t_method)SynthesisSymbol, gensym("PtObj"), A_SYMBOL,
                     0);

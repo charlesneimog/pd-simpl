@@ -36,6 +36,7 @@ typedef struct _Peaks {
 
     // Outlet/Inlet
     t_outlet *sigOut;
+    t_outlet *info;
 
 } t_Peaks;
 
@@ -212,6 +213,9 @@ static void OfflineExecute(t_Peaks *x, t_symbol *s) {
     SETSYMBOL(&args[0], x->AnalPtrStr);
     outlet_anything(x->sigOut, gensym("PtObjFrames"), 1, args);
 
+    SETFLOAT(&args[0], x->RealTimeData->Frames.size());
+    outlet_anything(x->info, gensym("frames"), 1, args);
+
     return;
 }
 
@@ -299,6 +303,7 @@ static void *NewPeaks(t_symbol *s, int argc, t_atom *argv) {
                 hopDefined = true;
             } else if (arg == "-offline") {
                 x->offline = true;
+                x->info = outlet_new(&x->xObj, &s_anything);
             }
         }
     }
@@ -360,6 +365,4 @@ void PeakSetup(void) {
                     gensym("ptcfg"), A_GIMME, 0);
     class_addmethod(PeaksDetection, (t_method)OfflineMode, gensym("offline"),
                     A_FLOAT, 0);
-
-    //
 }

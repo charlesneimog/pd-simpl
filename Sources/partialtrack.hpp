@@ -25,6 +25,8 @@ class AnalysisData {
     bool error = false;
     const int max_peaks;
     std::vector<double> audio;
+    unsigned HopSize;
+    unsigned BufferSize;
 
     simpl::Frames Frames;
     simpl::Frame Frame;
@@ -70,10 +72,17 @@ class AnalysisData {
     // ------
     void Synth();
     void SynthFrames();
+    void SynthFreezedFrames(simpl::Frames Frames);
+
+    // ------
+    void SetHopSize(unsigned int HopSize);
 
     // ──────────── Initializer ─────────
     AnalysisData(int frame_size, int hop_size)
         : max_peaks(256), Frame(frame_size, true) {
+
+        HopSize = hop_size;
+        BufferSize = frame_size;
 
         audio.resize(hop_size);
 
@@ -114,19 +123,6 @@ class AnalysisData {
         SynthMQ.max_partials(frame_size);
     }
 };
-
-typedef struct _pdsimpl {
-    simpl::PeakDetection *PeakDetection;
-    simpl::PartialTracking *PT;
-    simpl::Synthesis *Synth;
-    simpl::Frame *Frame;
-    int hop_size;
-    int max_peaks;
-    int frame_size;
-
-    int peakIndex;
-
-} t_pdsimpl;
 
 // ╭─────────────────────────────────────╮
 // │            Main Objects             │

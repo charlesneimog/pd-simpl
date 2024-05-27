@@ -135,6 +135,45 @@ void AnalysisData::SynthFrames() {
         return;
     }
 }
+// ==============================================
+void AnalysisData::SynthFreezedFrames(simpl::Frames FreezeFrames) {
+    if (error) {
+        return;
+    }
+
+    if (SyMethod == "loris") {
+        SynthLoris.synth(FreezeFrames);
+    } else if (SyMethod == "sndobj") {
+        SynthSnd.synth(FreezeFrames);
+    } else if (SyMethod == "sms") {
+        SynthSMS.synth(FreezeFrames);
+    } else if (SyMethod == "mq") {
+        SynthMQ.synth(FreezeFrames);
+    } else {
+        pd_error(NULL, "[partialtrack] Unknown Synth method");
+        error = true;
+        return;
+    }
+}
+
+// ==============================================
+void AnalysisData::SetHopSize(unsigned int NewHopSize) {
+    HopSize = NewHopSize;
+
+    if (SyMethod == "loris") {
+        SynthLoris.hop_size(HopSize);
+    } else if (SyMethod == "sndobj") {
+        SynthSnd.hop_size(HopSize);
+    } else if (SyMethod == "sms") {
+        SynthSMS.hop_size(HopSize);
+    } else if (SyMethod == "mq") {
+        SynthMQ.hop_size(HopSize);
+    } else {
+        pd_error(NULL, "[partialtrack] Unknown Synth method or undefined");
+        error = true;
+        return;
+    }
+}
 
 // ==============================================
 void AnalysisData::set_max_peaks(int max_peaks) {

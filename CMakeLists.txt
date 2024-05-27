@@ -61,23 +61,19 @@ endif()
 file(GLOB EXTERNAL_SOURCES "${CMAKE_SOURCE_DIR}/Sources/*.cpp")
 add_pd_external(partialtrack ${EXTERNAL_SOURCES})
 
-add_datafile(partialtrack "${CMAKE_SOURCE_DIR}/Resources/helps/partialtrack-help.pd")
-add_datafile(partialtrack "${CMAKE_SOURCE_DIR}/Resources/helps/flute.wav")
+
+file(GLOB HELP_PATCHES "${CMAKE_SOURCE_DIR}/Resources/LibFiles/*.pd")
+file(GLOB SOUNDS "${CMAKE_SOURCE_DIR}/Resources/LibFiles/*.wav")
+
+add_datafile(partialtrack ${HELP_PATCHES})
+add_datafile(partialtrack ${SOUNDS})
 add_datafile(partialtrack "${CMAKE_SOURCE_DIR}/README.md")
 
-if (WIN32)
-    target_link_options(partialtrack PRIVATE
-			"-Wl,-allow-multiple-definition"
-		)
-endif()
-
-
+# if (WIN32)
+#     target_link_options(partialtrack PUBLIC "-Wl,-allow-multiple-definition")
+# endif()
 
 target_link_libraries(partialtrack PUBLIC simpl)
-
-if (WIN32)
-    target_compile_definitions(partialtrack PUBLIC M_PI=PI random=rand srandom=srand)
-endif()
 
 target_include_directories(partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/fftw-3.3.10/api")
 target_include_directories(partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/simpl")
