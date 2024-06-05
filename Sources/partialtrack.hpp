@@ -12,6 +12,8 @@
 #include <simpl.h> // TODO: Need to fix this
 #pragma GCC diagnostic warning "-Wdeprecated-declarations"
 
+#include <sdif.h>
+
 #define SIMPL_SIGTOTAL(s) ((t_int)((s)->s_length * (s)->s_nchans))
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(message) printf("[DEBUG] %s\n", message)
@@ -125,12 +127,24 @@ class AnalysisData {
 };
 
 // ╭─────────────────────────────────────╮
+// │              Sdif File              │
+// ╰─────────────────────────────────────╯
+class SdifFileReader {
+  public:
+    void readSdifFile(const char *filename);
+    void writeSdifFile(const char *filename);
+
+  private:
+};
+
+// ╭─────────────────────────────────────╮
 // │            Main Objects             │
 // ╰─────────────────────────────────────╯
 void PeakSetup(void);
 void SynthSetup(void);
 void TransformationsSetup(void);
 void SimpleSynthSetup(void);
+void SdifObjSetup(void);
 
 // ╭─────────────────────────────────────╮
 // │            AnalData Ptr             │
