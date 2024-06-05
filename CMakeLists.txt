@@ -40,6 +40,12 @@ set_target_properties(fftw3 PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_D
 set_target_properties(fftw3 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Libraries/fftw-3.3.10/api)
 
+
+#╭──────────────────────────────────────╮
+#│             static sdif              │
+#╰──────────────────────────────────────╯
+include(${CMAKE_CURRENT_SOURCE_DIR}/Libraries/sdif.cmake)
+
 #╭──────────────────────────────────────╮
 #│             Static Simpl             │
 #╰──────────────────────────────────────╯
@@ -73,7 +79,7 @@ add_datafile(partialtrack "${CMAKE_SOURCE_DIR}/README.md")
 #     target_link_options(partialtrack PUBLIC "-Wl,-allow-multiple-definition")
 # endif()
 
-target_link_libraries(partialtrack PUBLIC simpl)
+target_link_libraries(partialtrack PUBLIC simpl sdif_static)
 
 target_include_directories(partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/fftw-3.3.10/api")
 target_include_directories(partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/simpl")

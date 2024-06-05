@@ -8,3 +8,5 @@ Libraries/fftw*
 .cache/*
 build/
 compile_commands.json
+Libraries/SDIF-3.11.7-src
+Resources/LibFiles/*.sdif
