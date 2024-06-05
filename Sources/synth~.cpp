@@ -268,7 +268,6 @@ static t_int *SynthAudioPerform(t_int *w) {
             return (w + 4);
         }
         if (x->RealTimeData->Frames.size() < x->freezeFrame) {
-            post("here");
             return (w + 4);
         }
         post("here");
