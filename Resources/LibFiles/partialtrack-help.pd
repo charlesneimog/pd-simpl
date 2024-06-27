@@ -246,6 +246,7 @@
 #X text 123 241 Freq to transpose;
 #X obj 136 270 nbx 4 18 -1e+37 1e+37 0 0 empty empty empty 0 -8 0 10 #e4e4e4 #373737 #373737 0 256;
 #X text 189 269 Transposition value in Cents;
+#X obj 18 678 dac~;
 #X connect 1 0 0 0;
 #X connect 2 0 8 0;
 #X connect 2 1 19 0;
@@ -258,6 +259,8 @@
 #X connect 10 0 11 0;
 #X connect 10 0 11 1;
 #X connect 12 0 10 0;
+#X connect 13 0 32 0;
+#X connect 13 0 32 1;
 #X connect 14 0 20 0;
 #X connect 16 0 17 0;
 #X connect 17 0 15 0;
@@ -296,7 +299,7 @@
 #X restore 464 352 pd WARNING;
 #X msg 416 243 read -resize ./flute-A4.wav sound;
 #N canvas 0 50 450 300 sdif 1;
-#X obj 102 312 pt-sdif;
+#X obj 102 353 pt-sdif;
 #X obj 102 183 pt-peaks~ -offline;
 #X text 230 182 need the [-offline] tab;
 #X msg 102 97 tab sound;
@@ -312,6 +315,7 @@
 #X connect 1 0 2 0;
 #X connect 2 0 3 0;
 #X restore 199 223 pd print-info;
+#X msg 180 285 read flute.sdif;
 #X connect 1 0 0 0;
 #X connect 1 1 7 0;
 #X connect 3 0 1 0;
@@ -319,6 +323,7 @@
 #X connect 5 0 6 0;
 #X connect 5 0 4 0;
 #X connect 6 0 1 0;
+#X connect 8 0 0 0;
 #X restore 135 134 pd sdif;
 #X connect 3 1 22 0;
 #X connect 5 0 23 0;

@@ -6,4 +6,7 @@
 	url = https://github.com/charlesneimog/simpl
 [submodule "Resources/pd.cmake"]
 	path = Resources/pd.cmake
-	url = https://github.com/charlesneimog/pd.cmake
+	url = https://github.com/pure-data/pd.cmake
+[submodule "Resources/CMakeAudioHelpers"]
+	path = Resources/CMakeAudioHelpers
+	url = git@github.com:charlesneimog/CMakeAudioHelpers.git
