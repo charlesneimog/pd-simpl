@@ -29,8 +29,8 @@ typedef struct _Synth { // It seems that all the objects are some kind of
     unsigned int freezeFrame;
     std::vector<float> freezeAudio;
 
-    simpl::Frame PreviousFrame;
-    simpl::Frame CurrentFrame;
+    simpl::Frame *PreviousFrame;
+    simpl::Frame *CurrentFrame;
 
     // Frames
     AnalysisData *RealTimeData;
@@ -126,13 +126,19 @@ static void ProcessOffline(t_Synth *x, t_symbol *p) {
         pd_error(NULL, "[synth~] Pointer not found");
         return;
     }
+
     if (Anal->SyMethod != x->SyMethod) {
         Anal->SyMethod = x->SyMethod;
         Anal->error = false;
     }
 
-    if (x->speed != 1) {
-        Anal->SetHopSize(Anal->HopSize / x->speed);
+    if (x->freezeFrame != -1) {
+        x->CurrentFrame = new simpl::Frame(*Anal->Frames[x->freezeFrame]);
+        x->PreviousFrame = new simpl::Frame(*Anal->Frames[x->freezeFrame - 1]);
+    }
+
+    if (x->freeze) {
+        return;
     }
 
     Anal->SynthFrames();
@@ -179,7 +185,6 @@ static void SynthesisSymbol(t_Synth *x, t_symbol *p) {
         pd_error(NULL, "[synth~] Pointer not found");
         return;
     }
-    int size = Anal->Frame.synth_size();
 
     if (x->RealTimeData == nullptr) {
         x->RealTimeData = Anal;
@@ -194,9 +199,12 @@ static void SynthesisSymbol(t_Synth *x, t_symbol *p) {
         Anal->error = false;
     }
 
-    Anal->Synth();
+    if (x->freeze) {
+        return;
+    }
 
-    size = Anal->Frame.synth_size();
+    Anal->Synth();
+    int size = Anal->Frame.synth_size();
 
     if (x->out == nullptr) {
         x->out = new t_sample[size];
@@ -243,17 +251,15 @@ static void SetMethods(t_Synth *x, t_symbol *s, int argc, t_atom *argv) {
 }
 
 // ==============================================
-void FreezeSynth(t_Synth *x) {
-    simpl::Frame *Frame = x->RealTimeData->Frames[x->freezeFrame];
-    simpl::Frame *NextFrame = x->RealTimeData->Frames[x->freezeFrame];
-
+std::vector<float> FreezeSynth(t_Synth *x) {
     simpl::Frames Frames(2);
-    Frames.push_back(Frame);
-    Frames.push_back(NextFrame);
+
+    Frames.push_back(x->PreviousFrame);
+    Frames.push_back(x->CurrentFrame);
 
     x->RealTimeData->SynthFreezedFrames(Frames);
 
-    std::vector<float> audio;
+    return x->freezeAudio;
 }
 
 // ==============================================
@@ -264,13 +270,11 @@ static t_int *SynthAudioPerform(t_int *w) {
     int i;
 
     if (x->freeze) {
-        if (x->freezeFrame == -1 || x->RealTimeData == nullptr) {
+        if (x->freezeFrame == -1) {
             return (w + 4);
         }
-        if (x->RealTimeData->Frames.size() < x->freezeFrame) {
-            return (w + 4);
-        }
-        post("here");
+        FreezeSynth(x);
+        return (w + 4);
     }
 
     if (x->offline) {
