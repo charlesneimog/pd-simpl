@@ -64,4 +64,4 @@ target_include_directories(
 target_include_directories(
   partialtrack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/sndobj")
 
-set_target_properties(partialtrack PROPERTIES CXX_STANDARD 17)
+set_target_properties(partialtrack PROPERTIES CXX_STANDARD 11)
