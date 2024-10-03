@@ -1,11 +1,5 @@
 #include "partialtrack.hpp"
 
-#if defined(_LANGUAGE_C_PLUS_PLUS) || defined(__cplusplus)
-extern "C" {
-void partialtrack_setup(void);
-}
-#endif
-
 // ╭─────────────────────────────────────╮
 // │             Sdif Files              │
 // ╰─────────────────────────────────────╯
@@ -195,7 +189,7 @@ void AnalysisData::set_max_peaks(int max_peaks) {
 }
 
 // ==============================================
-void partialtrack_setup(void) {
+extern "C" void partialtrack_setup() {
 
     int major, minor, micro;
     sys_getversion(&major, &minor, &micro);

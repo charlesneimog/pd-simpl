@@ -140,11 +140,11 @@ class SdifFileReader {
 // ╭─────────────────────────────────────╮
 // │            Main Objects             │
 // ╰─────────────────────────────────────╯
-void PeakSetup(void);
-void SynthSetup(void);
-void TransformationsSetup(void);
-void SimpleSynthSetup(void);
-void SdifObjSetup(void);
+void PeakSetup();
+void SynthSetup();
+void TransformationsSetup();
+void SimpleSynthSetup();
+void SdifObjSetup();
 
 // ╭─────────────────────────────────────╮
 // │            AnalData Ptr             │

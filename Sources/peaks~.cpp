@@ -349,7 +349,7 @@ void DeletePeaks(t_Peaks *x) {
 }
 
 // ==============================================
-void PeakSetup(void) {
+void PeakSetup() {
     PeaksDetection = class_new(gensym("pt-peaks~"), (t_newmethod)NewPeaks, NULL,
                                sizeof(t_Peaks), CLASS_DEFAULT, A_GIMME, 0);
     CLASS_MAINSIGNALIN(PeaksDetection, t_Peaks, xSample);

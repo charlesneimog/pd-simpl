@@ -11,20 +11,18 @@ include(${PDCMAKE_DIR}/pd.cmake)
 # ╰──────────────────────────────────────╯
 
 set(GSL_DISABLE_TESTS ON)
-add_subdirectory(Libraries/agsl)
+add_subdirectory(Libraries/agsl EXCLUDE_FROM_ALL)
 set_target_properties(gsl PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                      ${CMAKE_SOURCE_DIR})
 set_target_properties(gsl PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-include(
-  ${CMAKE_CURRENT_SOURCE_DIR}/Resources/CMakeAudioHelpers/CMake/fftw3.cmake)
-include(
-  ${CMAKE_CURRENT_SOURCE_DIR}/Resources/CMakeAudioHelpers/CMake/sdif.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/Resources/CMakeAudioHelpers/fftw3.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/Resources/CMakeAudioHelpers/sdif.cmake)
 
 # ╭──────────────────────────────────────╮
 # │             Static Simpl             │
 # ╰──────────────────────────────────────╯
-add_subdirectory(Libraries/simpl)
+add_subdirectory(Libraries/simpl EXCLUDE_FROM_ALL)
 
 set_target_properties(simpl PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                        ${CMAKE_SOURCE_DIR})
@@ -41,7 +39,8 @@ endif()
 # Get all cpp files inside ${CMAKE_SOURCE_DIR}/Sources/ and add them to the
 # project
 file(GLOB EXTERNAL_SOURCES "${CMAKE_SOURCE_DIR}/Sources/*.cpp")
-pd_add_external(partialtrack ${EXTERNAL_SOURCES})
+pd_add_external(partialtrack "${EXTERNAL_SOURCES}")
+message("External sources: ${EXTERNAL_SOURCES}")
 
 file(GLOB HELP_PATCHES "${CMAKE_SOURCE_DIR}/Resources/LibFiles/*.pd")
 file(GLOB SOUNDS "${CMAKE_SOURCE_DIR}/Resources/LibFiles/*.wav")
@@ -49,9 +48,6 @@ file(GLOB SOUNDS "${CMAKE_SOURCE_DIR}/Resources/LibFiles/*.wav")
 pd_add_datafile(partialtrack ${HELP_PATCHES})
 pd_add_datafile(partialtrack ${SOUNDS})
 pd_add_datafile(partialtrack "${CMAKE_SOURCE_DIR}/README.md")
-
-# if (WIN32) target_link_options(partialtrack PUBLIC
-# "-Wl,-allow-multiple-definition") endif()
 
 target_link_libraries(partialtrack PUBLIC simpl sdif_static)
 
