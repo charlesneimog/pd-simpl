@@ -32,8 +32,26 @@ else()
     set_target_properties(gsl PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/")
 endif()
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/Resources/CMakeAudioHelpers/fftw3.cmake)
-# include(${CMAKE_CURRENT_SOURCE_DIR}/Resources/CMakeAudioHelpers/sdif.cmake)
+# ╭──────────────────────────────────────╮
+# │                FFTW3                 │
+# ╰──────────────────────────────────────╯
+option(BUILD_SHARED_LIBS OFF)
+option(BUILD_TESTS OFF)
+option(DISABLE_FORTRAN ON)
+set(FFTW3_FILE ${CMAKE_CURRENT_BINARY_DIR}/fftw-${FFTW3_VERSION}.tar.gz)
+
+if(NOT EXISTS ${FFTW3_FILE})
+    message(STATUS "Downloading FFTW3")
+    file(DOWNLOAD https://www.fftw.org/fftw-${FFTW3_VERSION}.tar.gz ${FFTW3_FILE})
+endif()
+
+file(ARCHIVE_EXTRACT INPUT ${CMAKE_CURRENT_BINARY_DIR}/fftw-${FFTW3_VERSION}.tar.gz DESTINATION
+     ${CMAKE_CURRENT_BINARY_DIR}/)
+
+add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/fftw-3.3.10 EXCLUDE_FROM_ALL)
+set_target_properties(fftw3 PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+set_target_properties(fftw3 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/fftw-3.3.10/api)
 
 # ╭──────────────────────────────────────╮
 # │             Static Simpl             │

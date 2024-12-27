@@ -197,5 +197,5 @@ extern "C" void partialtrack_setup() {
     PeakSetup();
     SynthSetup();
     TransformationsSetup();
-    SdifObjSetup();
+    // SdifObjSetup();
 }
