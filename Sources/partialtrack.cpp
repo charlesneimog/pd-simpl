@@ -1,18 +1,6 @@
 #include "partialtrack.hpp"
 
 // ╭─────────────────────────────────────╮
-// │             Sdif Files              │
-// ╰─────────────────────────────────────╯
-void SdifFileReader::readSdifFile(const char *filename) {
-    size_t bytesread = 0;
-    int eof = 0;
-
-    SdifFileT *file = SdifFOpen("filename.sdif::selection", eReadFile);
-    SdifFReadGeneralHeader(file);
-    SdifFReadAllASCIIChunks(file);
-}
-
-// ╭─────────────────────────────────────╮
 // │         AnalysisData Method         │
 // ╰─────────────────────────────────────╯
 void AnalysisData::PeakDectection() {

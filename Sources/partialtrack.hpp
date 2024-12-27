@@ -12,7 +12,7 @@
 #include <simpl.h> // TODO: Need to fix this
 #pragma GCC diagnostic warning "-Wdeprecated-declarations"
 
-#include <sdif.h>
+// #include <sdif.h>
 
 #define SIMPL_SIGTOTAL(s) ((t_int)((s)->s_length * (s)->s_nchans))
 #ifdef DEBUG_MODE
