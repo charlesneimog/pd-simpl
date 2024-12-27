@@ -40,7 +40,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/Resources/CMakeAudioHelpers/fftw3.cmake)
 # ╰──────────────────────────────────────╯
 add_subdirectory(Libraries/simpl EXCLUDE_FROM_ALL)
 
-set_target_properties(simpl PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_target_properties(simpl PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(simpl PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 if(WIN32)
@@ -60,12 +60,13 @@ list(APPEND EXTERNAL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Sources/trans.cpp")
 
 pd_add_external(partialtrack "${EXTERNAL_SOURCES}")
 
-file(GLOB HELP_PATCHES "${CMAKE_SOURCE_DIR}/Resources/LibFiles/*.pd")
-file(GLOB SOUNDS "${CMAKE_SOURCE_DIR}/Resources/LibFiles/*.wav")
+file(GLOB HELP_PATCHES "${CMAKE_CURRENT_SOURCE_DIR}/Resources/LibFiles/*.pd")
+file(GLOB SOUNDS "${CMAKE_CURRENT_SOURCE_DIR}/Resources/LibFiles/*.wav")
 
 pd_add_datafile(partialtrack ${HELP_PATCHES})
 pd_add_datafile(partialtrack ${SOUNDS})
-pd_add_datafile(partialtrack "${CMAKE_SOURCE_DIR}/README.md")
+pd_add_datafile(partialtrack "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+
 target_link_libraries(partialtrack PUBLIC simpl)
 
 target_include_directories(partialtrack
