@@ -9,4 +9,4 @@
 	url = https://github.com/pure-data/pd.cmake
 [submodule "Resources/CMakeAudioHelpers"]
 	path = Resources/CMakeAudioHelpers
-	url = git@github.com:charlesneimog/CMakeAudioHelpers.git
+	url = https://github.com/charlesneimog/CMakeAudioHelpers
