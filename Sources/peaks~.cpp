@@ -349,8 +349,8 @@ void DeletePeaks(t_Peaks *x) {
 }
 
 // ==============================================
-void PeakSetup() {
-    PeaksDetection = class_new(gensym("pt-peaks~"), (t_newmethod)NewPeaks, NULL,
+extern "C" void peaks_tilde_setup(void) {
+    PeaksDetection = class_new(gensym("peaks~"), (t_newmethod)NewPeaks, NULL,
                                sizeof(t_Peaks), CLASS_DEFAULT, A_GIMME, 0);
     CLASS_MAINSIGNALIN(PeaksDetection, t_Peaks, xSample);
     class_addmethod(PeaksDetection, (t_method)PeaksAddDsp, gensym("dsp"),

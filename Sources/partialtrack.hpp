@@ -127,26 +127,6 @@ class AnalysisData {
 };
 
 // ╭─────────────────────────────────────╮
-// │              Sdif File              │
-// ╰─────────────────────────────────────╯
-class SdifFileReader {
-  public:
-    void readSdifFile(const char *filename);
-    void writeSdifFile(const char *filename);
-
-  private:
-};
-
-// ╭─────────────────────────────────────╮
-// │            Main Objects             │
-// ╰─────────────────────────────────────╯
-void PeakSetup();
-void SynthSetup();
-void TransformationsSetup();
-void SimpleSynthSetup();
-void SdifObjSetup();
-
-// ╭─────────────────────────────────────╮
 // │            AnalData Ptr             │
 // ╰─────────────────────────────────────╯
 

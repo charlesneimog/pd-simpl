@@ -344,8 +344,8 @@ static void *NewSynth(t_symbol *s, int argc, t_atom *argv) {
 }
 
 // ==============================================
-void SynthSetup(void) {
-    Synth = class_new(gensym("pt-synth~"), (t_newmethod)NewSynth, NULL,
+extern "C" void synth_tilde_setup(void) {
+    Synth = class_new(gensym("synth~"), (t_newmethod)NewSynth, NULL,
                       sizeof(t_Synth), CLASS_DEFAULT, A_GIMME, 0);
     class_addmethod(Synth, (t_method)SynthAddDsp, gensym("dsp"), A_CANT, 0);
 

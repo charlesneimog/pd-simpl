@@ -256,9 +256,9 @@ static void *NewTransform(t_symbol *synth) {
 }
 
 // ==============================================
-void TransformationsSetup(void) {
+extern "C" void trans_setup(void) {
     Transformations =
-        class_new(gensym("pt-trans"), (t_newmethod)NewTransform, NULL,
+        class_new(gensym("trans"), (t_newmethod)NewTransform, NULL,
                   sizeof(t_Trans), CLASS_DEFAULT, A_GIMME, 0);
 
     class_addmethod(Transformations, (t_method)SetSilencePartial,

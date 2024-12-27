@@ -175,27 +175,3 @@ void AnalysisData::set_max_peaks(int max_peaks) {
     Frame.max_peaks(max_peaks);
     Frame.max_partials(max_peaks);
 }
-
-// ==============================================
-extern "C" void partialtrack_setup() {
-
-    int major, minor, micro;
-    sys_getversion(&major, &minor, &micro);
-    if (major < 0 && minor < 54) {
-        pd_error(NULL, "[partialtrack] You need to use Pd 0.54 or higher");
-        return;
-    }
-
-#ifndef NEIMOG_LIBRARY
-    post("");
-    post("[partialtrack] by Charles K. Neimog");
-    post("[partialtrack] it uses simpl by John Glover");
-    post("[partialtrack] version %d.%d", 0, 2);
-    post("");
-#endif
-
-    PeakSetup();
-    SynthSetup();
-    TransformationsSetup();
-    // SdifObjSetup();
-}
