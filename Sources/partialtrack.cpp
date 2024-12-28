@@ -21,7 +21,7 @@ void AnalysisData::PeakDectection() {
     }
 }
 
-// ==============================================
+// ─────────────────────────────────────
 void AnalysisData::PeakDectectionFrames(int audioSize, double *audio) {
     if (error) {
         return;
@@ -41,7 +41,7 @@ void AnalysisData::PeakDectectionFrames(int audioSize, double *audio) {
     }
 }
 
-// ==============================================
+// ─────────────────────────────────────
 void AnalysisData::PartialTracking() {
     if (error) {
         return;
@@ -61,7 +61,7 @@ void AnalysisData::PartialTracking() {
     }
 }
 
-// ==============================================
+// ─────────────────────────────────────
 void AnalysisData::PartialTrackingFrames() {
     if (error) {
         return;
@@ -87,7 +87,7 @@ void AnalysisData::PartialTrackingFrames() {
     }
 }
 
-// ==============================================
+// ─────────────────────────────────────
 void AnalysisData::Synth() {
     if (error) {
         return;
@@ -109,7 +109,7 @@ void AnalysisData::Synth() {
     }
 }
 
-// ==============================================
+// ─────────────────────────────────────
 void AnalysisData::SynthFrames() {
     if (error) {
         return;
@@ -129,7 +129,8 @@ void AnalysisData::SynthFrames() {
         return;
     }
 }
-// ==============================================
+
+// ─────────────────────────────────────
 void AnalysisData::SynthFreezedFrames(simpl::Frames FreezeFrames) {
     if (error) {
         return;
@@ -150,7 +151,7 @@ void AnalysisData::SynthFreezedFrames(simpl::Frames FreezeFrames) {
     }
 }
 
-// ==============================================
+// ─────────────────────────────────────
 void AnalysisData::SetHopSize(unsigned int NewHopSize) {
     HopSize = NewHopSize;
 
@@ -169,7 +170,7 @@ void AnalysisData::SetHopSize(unsigned int NewHopSize) {
     }
 }
 
-// ==============================================
+// ─────────────────────────────────────
 void AnalysisData::set_max_peaks(int max_peaks) {
     max_peaks = max_peaks;
     Frame.max_peaks(max_peaks);

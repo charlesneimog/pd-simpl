@@ -1,10 +1,8 @@
 #include "partialtrack.hpp"
 
-static t_class *Synth;
+static t_class *synth_class;
 
-// ==============================================
-typedef struct _Synth { // It seems that all the objects are some kind of
-                        // class.
+typedef struct _Synth {
     t_object xObj;
     t_sample *out;
 
@@ -44,8 +42,8 @@ typedef struct _Synth { // It seems that all the objects are some kind of
 
 } t_Synth;
 
-// ==============================================
-static void UpdateSynthConfig(t_Synth *x, AnalysisData *Anal) {
+// ─────────────────────────────────────
+static void synth_update(t_Synth *x, AnalysisData *Anal) {
     if (x->SyMethod == "sms") {
         Anal->SynthSMS.det_synthesis_type(x->det_synthesis_type);
     } else if (x->SyMethod == "loris") {
@@ -55,8 +53,8 @@ static void UpdateSynthConfig(t_Synth *x, AnalysisData *Anal) {
     Anal->residual = x->residual;
 }
 
-// ==============================================
-static void ConfigSynth(t_Synth *x, t_symbol *s, int argc, t_atom *argv) {
+// ─────────────────────────────────────
+static void synth_config(t_Synth *x, t_symbol *s, int argc, t_atom *argv) {
     // Sms
     std::string method = x->SyMethod;
     x->updateConfig = true;
@@ -100,8 +98,8 @@ static void ConfigSynth(t_Synth *x, t_symbol *s, int argc, t_atom *argv) {
     }
 }
 
-// ==============================================
-static void OfflineMode(t_Synth *x, t_float f) {
+// ─────────────────────────────────────
+static void synth_offline(t_Synth *x, t_float f) {
     if (f == 0) {
         x->offline = false;
     } else {
@@ -109,8 +107,9 @@ static void OfflineMode(t_Synth *x, t_float f) {
     }
 }
 
-// ==============================================
-static void FreezeMode(t_Synth *x, t_float f) {
+// ─────────────────────────────────────
+static void synth_freeze(t_Synth *x, t_float f) {
+    // TODO:
     if (f == 0) {
         x->freeze = false;
     } else {
@@ -119,8 +118,8 @@ static void FreezeMode(t_Synth *x, t_float f) {
     }
 }
 
-// ==============================================
-static void ProcessOffline(t_Synth *x, t_symbol *p) {
+// ─────────────────────────────────────
+static void trans_processoffline(t_Synth *x, t_symbol *p) {
     AnalysisData *Anal = getAnalisysPtr(p);
     if (Anal == nullptr) {
         pd_error(NULL, "[synth~] Pointer not found");
@@ -178,8 +177,8 @@ static void ProcessOffline(t_Synth *x, t_symbol *p) {
     post("[synth~] Finished Synthesis");
 }
 
-// ==============================================
-static void SynthesisSymbol(t_Synth *x, t_symbol *p) {
+// ─────────────────────────────────────
+static void synth_symbol(t_Synth *x, t_symbol *p) {
     AnalysisData *Anal = getAnalisysPtr(p);
     if (Anal == nullptr) {
         pd_error(NULL, "[synth~] Pointer not found");
@@ -190,7 +189,7 @@ static void SynthesisSymbol(t_Synth *x, t_symbol *p) {
         x->RealTimeData = Anal;
     }
     if (x->updateConfig) {
-        UpdateSynthConfig(x, Anal);
+        synth_update(x, Anal);
         x->updateConfig = false;
     }
 
@@ -217,8 +216,8 @@ static void SynthesisSymbol(t_Synth *x, t_symbol *p) {
     DEBUG_PRINT("[synth~] Finished Synthesis\n"); // NOTE: End of the cycle
 }
 
-// ==============================================
-static void SetMethods(t_Synth *x, t_symbol *s, int argc, t_atom *argv) {
+// ─────────────────────────────────────
+static void synth_set(t_Synth *x, t_symbol *s, int argc, t_atom *argv) {
     if (argc < 2) {
         pd_error(NULL, "[peaks~] Missing arguments");
         return;
@@ -250,8 +249,8 @@ static void SetMethods(t_Synth *x, t_symbol *s, int argc, t_atom *argv) {
     }
 }
 
-// ==============================================
-std::vector<float> FreezeSynth(t_Synth *x) {
+// ─────────────────────────────────────
+std::vector<float> synth_freeze(t_Synth *x) {
     simpl::Frames Frames(2);
 
     Frames.push_back(x->PreviousFrame);
@@ -262,8 +261,8 @@ std::vector<float> FreezeSynth(t_Synth *x) {
     return x->freezeAudio;
 }
 
-// ==============================================
-static t_int *SynthAudioPerform(t_int *w) {
+// ─────────────────────────────────────
+static t_int *synth_dsp(t_int *w) {
     t_Synth *x = (t_Synth *)(w[1]);
     t_sample *out = (t_sample *)(w[2]);
     int n = (int)(w[3]);
@@ -273,7 +272,7 @@ static t_int *SynthAudioPerform(t_int *w) {
         if (x->freezeFrame == -1) {
             return (w + 4);
         }
-        FreezeSynth(x);
+        synth_freeze(x);
         return (w + 4);
     }
 
@@ -303,18 +302,18 @@ static t_int *SynthAudioPerform(t_int *w) {
     return (w + 4);
 }
 
-// ==============================================
-static void SynthAddDsp(t_Synth *x, t_signal **sp) {
+// ─────────────────────────────────────
+static void synth_dsp(t_Synth *x, t_signal **sp) {
     x->blockPosition = 0;
     x->synthDone = 0;
 
-    dsp_add(SynthAudioPerform, 3, x, sp[0]->s_vec, sp[0]->s_n);
+    dsp_add(synth_dsp, 3, x, sp[0]->s_vec, sp[0]->s_n);
     DEBUG_PRINT("[synth~] Dsp routine added");
 }
 
-// ==============================================
-static void *NewSynth(t_symbol *s, int argc, t_atom *argv) {
-    t_Synth *x = (t_Synth *)pd_new(Synth);
+// ─────────────────────────────────────
+static void *synth_new(t_symbol *s, int argc, t_atom *argv) {
+    t_Synth *x = (t_Synth *)pd_new(synth_class);
     x->outlet = outlet_new(&x->xObj, &s_signal);
     x->SyMethod = "sms";
 
@@ -343,21 +342,24 @@ static void *NewSynth(t_symbol *s, int argc, t_atom *argv) {
     return x;
 }
 
-// ==============================================
+// ─────────────────────────────────────
 extern "C" void synth_tilde_setup(void) {
-    Synth = class_new(gensym("synth~"), (t_newmethod)NewSynth, NULL,
-                      sizeof(t_Synth), CLASS_DEFAULT, A_GIMME, 0);
-    class_addmethod(Synth, (t_method)SynthAddDsp, gensym("dsp"), A_CANT, 0);
+    synth_class = class_new(gensym("synth~"), (t_newmethod)synth_new, NULL,
+                            sizeof(t_Synth), CLASS_DEFAULT, A_GIMME, 0);
+    class_addmethod(Synth, (t_method)synth_dsp, gensym("dsp"), A_CANT, 0);
 
-    class_addmethod(Synth, (t_method)SetMethods, gensym("set"), A_GIMME, 0);
-
-    class_addmethod(Synth, (t_method)ConfigSynth, gensym("cfg"), A_GIMME, 0);
-    class_addmethod(Synth, (t_method)OfflineMode, gensym("offline"), A_FLOAT,
+    class_addmethod(synth_class, (t_method)synth_set, gensym("set"), A_GIMME,
                     0);
-    class_addmethod(Synth, (t_method)FreezeMode, gensym("freeze"), A_FLOAT, 0);
 
-    class_addmethod(Synth, (t_method)SynthesisSymbol, gensym("PtObj"), A_SYMBOL,
+    class_addmethod(synth_class, (t_method)synth_config, gensym("cfg"), A_GIMME,
                     0);
-    class_addmethod(Synth, (t_method)ProcessOffline, gensym("PtObjFrames"),
+    class_addmethod(synth_class, (t_method)synth_offline, gensym("offline"),
+                    A_FLOAT, 0);
+    class_addmethod(synth_class, (t_method)synth_freeze, gensym("freeze"),
+                    A_FLOAT, 0);
+
+    class_addmethod(synth_class, (t_method)synth_symbol, gensym("PtObj"),
                     A_SYMBOL, 0);
+    class_addmethod(synth_class, (t_method)trans_processoffline,
+                    gensym("PtObjFrames"), A_SYMBOL, 0);
 }
