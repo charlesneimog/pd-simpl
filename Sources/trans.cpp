@@ -247,7 +247,7 @@ static void Process(t_Trans *x, t_symbol *p) {
 }
 
 // ==============================================
-static void *NewTransform(t_symbol *synth) {
+static void *NewTransform(t_symbol *synth, int argc, t_atom *argv) {
     t_Trans *x = (t_Trans *)pd_new(Transformations);
     x->eFactor = 1.0;
     x->out = outlet_new(&x->xObj, &s_anything);
