@@ -125,14 +125,19 @@ endif()
 # Get all cpp files inside ${CMAKE_SOURCE_DIR}/Sources/ and add them to the project
 list(APPEND LIB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Sources/partialtrack.cpp")
 list(APPEND LIB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Sources/ptobj.cpp")
+set(MANIPULATION_SRC "${CMAKE_CURRENT_SOURCE_DIR}/Sources/manipulations.cpp")
 
 pd_add_external(peaks~ "${CMAKE_CURRENT_SOURCE_DIR}/Sources/peaks~.cpp;${LIB_SOURCES}")
 pd_add_external(synth~ "${CMAKE_CURRENT_SOURCE_DIR}/Sources/synth~.cpp;${LIB_SOURCES}")
-pd_add_external(trans "${CMAKE_CURRENT_SOURCE_DIR}/Sources/trans.cpp;${LIB_SOURCES}")
+# pd_add_external(trans "${CMAKE_CURRENT_SOURCE_DIR}/Sources/trans.cpp;${LIB_SOURCES}")
+pd_add_external(
+    partialtrack~
+    "${CMAKE_CURRENT_SOURCE_DIR}/Sources/partialtrack~.cpp;${LIB_SOURCES};${MANIPULATION_SRC}")
 
 set_target_properties(peaks_tilde PROPERTIES CXX_STANDARD 11)
 set_target_properties(synth_tilde PROPERTIES CXX_STANDARD 11)
-set_target_properties(trans PROPERTIES CXX_STANDARD 11)
+set_target_properties(partialtrack_tilde PROPERTIES CXX_STANDARD 11)
+# set_target_properties(trans PROPERTIES CXX_STANDARD 11)
 
 # ╭──────────────────────────────────────╮
 # │         Final Configuration          │
@@ -142,7 +147,8 @@ file(GLOB SOUNDS "${CMAKE_CURRENT_SOURCE_DIR}/Resources/LibFiles/*.wav")
 
 target_link_libraries(peaks_tilde PUBLIC simpl gsl)
 target_link_libraries(synth_tilde PUBLIC simpl gsl)
-target_link_libraries(trans PUBLIC simpl gsl)
+target_link_libraries(partialtrack_tilde PUBLIC simpl gsl)
+# target_link_libraries(trans PUBLIC simpl gsl)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/Libraries/fftw-3.3.10/api")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/Libraries/simpl/src/simpl")

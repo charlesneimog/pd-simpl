@@ -79,31 +79,31 @@ static void peaks_configure(t_Peaks *x, t_symbol *s, int argc, t_atom *argv) {
     }
 }
 
-// ==============================================
-static void peaks_set(t_Peaks *x, t_symbol *sMethod, t_symbol *sName) {
-    std::string method = sMethod->s_name;
-    std::string name = sName->s_name;
-    std::string validMethods[] = {"sms", "loris", "mq", "sndobj"};
-    AnalysisData *Anal = (AnalysisData *)x->RealTimeData;
-
-    // check if the method is valid
-    if (std::find(std::begin(validMethods), std::end(validMethods), name) ==
-        std::end(validMethods)) {
-        pd_error(NULL, "[peaks~] Unknown method");
-        return;
-    }
-
-    if (method == "partial") {
-        Anal->PtMethod = name;
-    } else if (method == "peak") {
-        Anal->PdMethod = name;
-    } else {
-        pd_error(NULL, "[s-peaks~] This object just define the 'peak' and "
-                       "'partial' methods");
-        return;
-    }
-    Anal->error = false;
-}
+// // ==============================================
+// static void peaks_set(t_Peaks *x, t_symbol *sMethod, t_symbol *sName) {
+//     std::string method = sMethod->s_name;
+//     std::string name = sName->s_name;
+//     std::string validMethods[] = {"sms", "loris", "mq", "sndobj"};
+//     AnalysisData *Anal = (AnalysisData *)x->RealTimeData;
+//
+//     // check if the method is valid
+//     if (std::find(std::begin(validMethods), std::end(validMethods), name) ==
+//         std::end(validMethods)) {
+//         pd_error(NULL, "[peaks~] Unknown method");
+//         return;
+//     }
+//
+//     if (method == "partial") {
+//         Anal->PtMethod = name;
+//     } else if (method == "peak") {
+//         Anal->PdMethod = name;
+//     } else {
+//         pd_error(NULL, "[s-peaks~] This object just define the 'peak' and "
+//                        "'partial' methods");
+//         return;
+//     }
+//     Anal->error = false;
+// }
 
 // ==============================================
 static void peaks_offlinemode(t_Peaks *x, t_float f) {
@@ -226,7 +226,6 @@ static t_int *peaks_perform(t_int *w) {
     x->n = n;
 
     if (x->offline) {
-        // TODO: way to disable this
         return (w + 4);
     }
 
@@ -357,10 +356,8 @@ extern "C" void peaks_tilde_setup(void) {
                     A_SYMBOL, 0);
     class_addmethod(peaks_class, (t_method)peaks_detached, gensym("detached"),
                     A_FLOAT, 0);
-    class_addmethod(PeaksDetection, (t_method)peaks_set, gensym("set"), A_GIMME,
+    class_addmethod(peaks_class, (t_method)peaks_set, gensym("set"), A_GIMME,
                     0);
-    class_addmethod(peaks_class, (t_method)peaks_configure, gensym("ptcfg"),
-                    A_GIMME, 0);
     class_addmethod(peaks_class, (t_method)peaks_offlinemode, gensym("offline"),
                     A_FLOAT, 0);
 }

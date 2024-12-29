@@ -7,7 +7,8 @@ t_PtrPartialAnalysis *newAnalisysPtr(int frameSize, int bufferSize) {
     t_PtrPartialAnalysis *x =
         (t_PtrPartialAnalysis *)getbytes(sizeof(t_PtrPartialAnalysis));
     x->x_pd = AnalysisPtr;
-    x->x_data = new AnalysisData(frameSize, bufferSize);
+    int sr = sys_getsr();
+    x->x_data = new AnalysisData(sr, frameSize, bufferSize);
     std::string PointerStr = std::to_string((long long)x->x_data);
     x->x_sym = gensym(PointerStr.c_str());
     pd_bind((t_pd *)x, x->x_sym);

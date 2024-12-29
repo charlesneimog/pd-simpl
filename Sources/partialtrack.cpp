@@ -7,6 +7,7 @@ void AnalysisData::PeakDectection() {
     if (error) {
         return;
     }
+
     if (PdMethod == "loris") {
         PdLoris.find_peaks_in_frame(&Frame);
     } else if (PdMethod == "sndobj") {

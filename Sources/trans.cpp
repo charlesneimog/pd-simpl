@@ -1,157 +1,30 @@
 #include "partialtrack.hpp"
 
 static t_class *trans_class;
-#define MAX_SILENCED_PARTIALS 127
 
 typedef struct _Trans {
     t_object xObj;
-
-    // silence partial
-    t_float sLowNote[MAX_SILENCED_PARTIALS];
-    t_float sHighNote[MAX_SILENCED_PARTIALS];
-    unsigned int sIndex;
-
-    // Transpose Partials
-    t_float tCenterFreq[MAX_SILENCED_PARTIALS];
-    t_float tVariation[MAX_SILENCED_PARTIALS]; // cents
-    t_float tCents[MAX_SILENCED_PARTIALS];
-    unsigned int tIndex;
-
-    // Transpose Partials
-    t_float aCenterFreq[MAX_SILENCED_PARTIALS];
-    t_float aVariation[MAX_SILENCED_PARTIALS]; // cents
-    t_float aAmpsFactor[MAX_SILENCED_PARTIALS];
-    unsigned int aIndex;
-
-    // Expand Partials
-    t_float eFactor;
-    t_float eFundFreq;
-    t_float ePrevFreq;
-
+    TransParams *Params;
     t_outlet *out;
 
 } t_Trans;
-
-static double f2m(double f) { return 12 * log(f / 220) / log(2) + 57; }
-static double m2f(double m) { return 220 * exp(log(2) * ((m - 57) / 12)); }
-static double transFreq(double originalFrequency, double cents) {
-    return originalFrequency * std::pow(2.0, cents / 1200.0);
-}
-
-// ╭─────────────────────────────────────╮
-// │           Process Helpers           │
-// ╰─────────────────────────────────────╯
-static void trans_transpose(t_Trans *x, simpl::Frame *Frame, int i) {
-    simpl::Peak *Peak = Frame->partial(i);
-    if (Peak != nullptr) {
-        if (Peak->frequency == 0) {
-            return;
-        }
-        for (int i = 0; i < x->tIndex; i++) {
-            if (Peak->frequency >=
-                    x->tCenterFreq[i] - x->tVariation[i] && // TODO: Fix this
-                Peak->frequency <= x->tCenterFreq[i] + x->tVariation[i]) {
-                float newFreq = transFreq(Peak->frequency, x->tCents[i]);
-                Peak->frequency = newFreq;
-            }
-        }
-    }
-}
-
-// ─────────────────────────────────────
-static void trans_changeamps(t_Trans *x, simpl::Frame *Frame, int i) {
-    simpl::Peak *Peak = Frame->partial(i);
-    if (Peak != nullptr) {
-        if (Peak->frequency == 0) {
-            return;
-        }
-        for (int i = 0; i < x->aIndex; i++) {
-            if (Peak->frequency >= x->aCenterFreq[i] - x->aVariation[i] &&
-                Peak->frequency <= x->aCenterFreq[i] + x->aVariation[i]) {
-                float newFreq = transFreq(Peak->frequency, x->tCents[i]);
-                Peak->amplitude *= x->aAmpsFactor[i];
-            }
-        }
-    }
-}
-
-// ─────────────────────────────────────
-static void trans_expand(t_Trans *x, simpl::Frame *Frame, int i) {
-    simpl::Peak *Peak = Frame->partial(i);
-    if (i == 0) {
-        if (Peak != nullptr) {
-            x->ePrevFreq = Peak->frequency;
-            return;
-        }
-        return;
-    }
-
-    if (Peak != nullptr) {
-        if (Peak->frequency == 0 || x->ePrevFreq == 0) {
-            return;
-        }
-        float d = (Peak->frequency - x->ePrevFreq) * x->eFactor;
-        float newFreq = m2f(f2m(x->ePrevFreq) + d);
-        Peak->frequency = m2f(f2m(x->ePrevFreq) + d);
-    }
-}
-
-// ─────────────────────────────────────
-static void trans_silencepartial(t_Trans *x, simpl::Frame *Frame, int i) {
-    // TODO: Fix
-    simpl::Peak *Peak = Frame->partial(i);
-    if (Peak != nullptr) {
-        if (Peak->frequency >= x->sLowNote[i] &&
-            Peak->frequency <= x->sHighNote[i]) {
-            Peak->amplitude = 0;
-        }
-    }
-}
-
-// ─────────────────────────────────────
-static void trans_settransposedpartial(t_trans *x, t_float centerfreq,
-                                       t_float variation, t_float cents) {
-    // args: centerFreq, cents variation, cents to transpose
-    for (int i = 0; i < x->tIndex; i++) {
-        if (centerFreq == x->tCenterFreq[i]) {
-            x->tCents[i] = cents;
-            return;
-        }
-    }
-
-    if (x->tIndex < MAX_SILENCED_PARTIALS) {
-        x->tCenterFreq[x->tIndex] = centerFreq;
-        x->tVariation[x->tIndex] = variation;
-        x->tCents[x->tIndex] = cents;
-        x->tIndex++;
-    } else {
-        pd_error(NULL, "[peaks~] Maximum number of silenced partials reached");
-    }
-}
-
-// ─────────────────────────────────────
-static void trans_reset(t_Trans *x) {
-    x->sIndex = 0;
-    x->aIndex = 0;
-    x->tIndex = 0;
-}
 
 // ─────────────────────────────────────
 static void trans_setamp(t_Trans *x, t_float centerFreq, t_float variation,
                          t_float amp) {
     // args: centerFreq, cents variation, cents to transpose
-    for (int i = 0; i < x->aIndex; i++) {
-        if (centerFreq == x->aCenterFreq[i]) {
-            x->aAmpsFactor[i] = amp;
+    for (int i = 0; i < x->Params->aIndex; i++) {
+        if (centerFreq == x->Params->aCenterFreq[i]) {
+            x->Params->aAmpsFactor[i] = amp;
             return;
         }
     }
 
-    if (x->aIndex < MAX_SILENCED_PARTIALS) {
-        x->aCenterFreq[x->aIndex] = centerFreq;
-        x->aVariation[x->aIndex] = variation;
-        x->aAmpsFactor[x->aIndex] = amp;
-        x->aIndex++;
+    if (x->Params->aIndex < MAX_SILENCED_PARTIALS) {
+        x->Params->aCenterFreq[x->Params->aIndex] = centerFreq;
+        x->Params->aVariation[x->Params->aIndex] = variation;
+        x->Params->aAmpsFactor[x->Params->aIndex] = amp;
+        x->Params->aIndex++;
     } else {
         pd_error(NULL, "[peaks~] Maximum number of silenced partials reached");
     }
@@ -160,17 +33,15 @@ static void trans_setamp(t_Trans *x, t_float centerFreq, t_float variation,
 // ─────────────────────────────────────
 static void trans_setsilence(t_Trans *x, t_float centerFreq,
                              t_float variation) {
-    if (x->sIndex < MAX_SILENCED_PARTIALS) {
-        x->sLowNote[x->sIndex] = centerFreq - variation;
-        x->sHighNote[x->sIndex] = centerFreq + variation;
-        x->sIndex++;
+    if (x->Params->sIndex < MAX_SILENCED_PARTIALS) {
+        x->Params->sLowNote[x->Params->sIndex] = centerFreq;
+        x->Params->sHighNote[x->Params->sIndex] = centerFreq;
+        x->Params->sVariation[x->Params->sIndex] = variation;
+        x->Params->sIndex++;
     } else {
         pd_error(NULL, "[peaks~] Maximum number of silenced partials reached");
     }
 }
-
-// ─────────────────────────────────────
-static void trans_expand(t_Trans *x, t_float factor) { x->eFactor = factor; }
 
 // ─────────────────────────────────────
 static void trans_processoffline(t_Trans *x, t_symbol *p) {
@@ -184,14 +55,14 @@ static void trans_processoffline(t_Trans *x, t_symbol *p) {
     for (int i = 0; i < Frames.size(); i++) {
         simpl::Frame *Frame = Frames[i];
         for (int i = 0; i < Frame->num_partials(); i++) {
-            if (x->sIndex != 0)
-                trans_silencepartial(x, Frame, i);
-            if (x->tIndex != 0)
-                trans_transpose(x, Frame, i);
-            if (x->eFactor != 1.0)
-                trans_expand(x, Frame, i);
-            if (x->aIndex != 0)
-                trans_changeamps(x, Frame, i);
+            if (x->Params->sIndex != 0)
+                silencepartial(x->Params, Frame, i);
+            if (x->Params->tIndex != 0)
+                transpose(x->Params, Frame, i);
+            // if (x->Params->eFactor != 1.0)
+            // trans_expand(x->Params, Frame, i);
+            if (x->Params->aIndex != 0)
+                changeamps(x->Params, Frame, i);
         }
     }
 
@@ -216,14 +87,14 @@ static void trans_process(t_Trans *x, t_symbol *p) {
     }
 
     for (int i = 0; i < Anal->Frame.num_partials(); i++) {
-        if (x->sIndex != 0)
-            trans_silencepartial(x, &Anal->Frame, i);
-        if (x->tIndex != 0)
-            trans_transpose(x, &Anal->Frame, i);
-        if (x->eFactor != 1.0)
-            trans_expand(x, &Anal->Frame, i);
-        if (x->aIndex != 0)
-            trans_changeamps(x, &Anal->Frame, i);
+        if (x->Params->sIndex != 0)
+            silencepartial(x->Params, &Anal->Frame, i);
+        if (x->Params->tIndex != 0)
+            transpose(x->Params, &Anal->Frame, i);
+        // if (x->eFactor != 1.0)
+        //     expand(x->Params, &Anal->Frame, i);
+        if (x->Params->aIndex != 0)
+            changeamps(x->Params, &Anal->Frame, i);
     }
 
     t_atom args[1];
@@ -235,27 +106,33 @@ static void trans_process(t_Trans *x, t_symbol *p) {
 // ─────────────────────────────────────
 static void *trans_new(t_symbol *synth, int argc, t_atom *argv) {
     t_Trans *x = (t_Trans *)pd_new(trans_class);
-    x->eFactor = 1.0;
     x->out = outlet_new(&x->xObj, &s_anything);
+    x->Params = new TransParams;
     DEBUG_PRINT("[synth~] New Synth");
     return x;
 }
 
 // ─────────────────────────────────────
+static void trans_free(t_Trans *x) {
+    delete x->Params;
+    return;
+}
+
+// ─────────────────────────────────────
 extern "C" void trans_setup(void) {
-    trans_class = class_new(gensym("trans"), (t_newmethod)trans_new, NULL,
-                            sizeof(t_Trans), CLASS_DEFAULT, A_GIMME, 0);
+    trans_class =
+        class_new(gensym("trans"), (t_newmethod)trans_new, (t_method)trans_free,
+                  sizeof(t_Trans), CLASS_DEFAULT, A_GIMME, 0);
 
     class_addmethod(trans_class, (t_method)trans_setsilence, gensym("silence"),
                     A_FLOAT, A_FLOAT, 0);
-    class_addmethod(trans_class, (t_method)trans_expand, gensym("expand"),
-                    A_FLOAT, 0);
-    class_addmethod(trans_class, (t_method)trans_settransposedpartial,
-                    gensym("trans"), A_FLOAT, A_FLOAT, A_FLOAT, 0);
+    // class_addmethod(trans_class, (t_method)trans_settransposedpartial,
+    //                 gensym("trans"), A_FLOAT, A_FLOAT, A_FLOAT, 0);
     class_addmethod(trans_class, (t_method)trans_setamp, gensym("amps"),
                     A_FLOAT, A_FLOAT, A_FLOAT, 0);
-    class_addmethod(trans_class, (t_method)trans_reset, gensym("reset"), A_NULL,
-                    0);
+    // class_addmethod(trans_class, (t_method)trans_reset, gensym("reset"),
+    // A_NULL,
+    //                 0);
     class_addmethod(trans_class, (t_method)trans_process, gensym("PtObj"),
                     A_SYMBOL, 0);
     class_addmethod(trans_class, (t_method)trans_processoffline,

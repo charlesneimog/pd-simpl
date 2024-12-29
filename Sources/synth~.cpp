@@ -303,7 +303,7 @@ static t_int *synth_dsp(t_int *w) {
 }
 
 // ─────────────────────────────────────
-static void synth_dsp(t_Synth *x, t_signal **sp) {
+static void synth_adddsp(t_Synth *x, t_signal **sp) {
     x->blockPosition = 0;
     x->synthDone = 0;
 
@@ -346,7 +346,8 @@ static void *synth_new(t_symbol *s, int argc, t_atom *argv) {
 extern "C" void synth_tilde_setup(void) {
     synth_class = class_new(gensym("synth~"), (t_newmethod)synth_new, NULL,
                             sizeof(t_Synth), CLASS_DEFAULT, A_GIMME, 0);
-    class_addmethod(Synth, (t_method)synth_dsp, gensym("dsp"), A_CANT, 0);
+    class_addmethod(synth_class, (t_method)synth_adddsp, gensym("dsp"), A_CANT,
+                    0);
 
     class_addmethod(synth_class, (t_method)synth_set, gensym("set"), A_GIMME,
                     0);
@@ -354,8 +355,6 @@ extern "C" void synth_tilde_setup(void) {
     class_addmethod(synth_class, (t_method)synth_config, gensym("cfg"), A_GIMME,
                     0);
     class_addmethod(synth_class, (t_method)synth_offline, gensym("offline"),
-                    A_FLOAT, 0);
-    class_addmethod(synth_class, (t_method)synth_freeze, gensym("freeze"),
                     A_FLOAT, 0);
 
     class_addmethod(synth_class, (t_method)synth_symbol, gensym("PtObj"),
