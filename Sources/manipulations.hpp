@@ -13,16 +13,22 @@ class TransParams {
     unsigned int sIndex;
 
     // Transpose Partials
-    float tCenterFreq[MAX_SILENCED_PARTIALS];
+    float tMidi[MAX_SILENCED_PARTIALS];
     float tVariation[MAX_SILENCED_PARTIALS]; // cents
     float tCents[MAX_SILENCED_PARTIALS];
     unsigned int tIndex;
 
-    // Transpose Partials
-    float aCenterFreq[MAX_SILENCED_PARTIALS];
+    // Change Transpose all
+    float all_cents;
+    bool all_exec;
+
+    // Change Amps
+    float aMidi[MAX_SILENCED_PARTIALS];
     float aVariation[MAX_SILENCED_PARTIALS]; // cents
     float aAmpsFactor[MAX_SILENCED_PARTIALS];
     unsigned int aIndex;
+
+    // Change Transpose all
 
     // Expand Partials
     float eFactor;
@@ -30,6 +36,7 @@ class TransParams {
     float ePrevFreq;
 
     void transpose(simpl::Peak *Peak);
+    void transposeall(simpl::Peak *Peak);
     void changeamps(simpl::Peak *Peak);
     void silence(simpl::Peak *Peak);
     void expand(simpl::Peak *Peak);

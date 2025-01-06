@@ -151,18 +151,4 @@ class AnalysisData {
     }
 };
 
-// ╭─────────────────────────────────────╮
-// │            AnalData Ptr             │
-// ╰─────────────────────────────────────╯
-
-typedef struct _PtrPartialAnalysis {
-    t_pd x_pd;
-    t_symbol *x_sym;
-    AnalysisData *x_data;
-} t_PtrPartialAnalysis;
-
-t_PtrPartialAnalysis *newAnalisysPtr(int frameSize, int bufferSize);
-void killAnalisysPtr(t_PtrPartialAnalysis *x);
-AnalysisData *getAnalisysPtr(t_symbol *s);
-
 #endif // PARTIALTRACK_H

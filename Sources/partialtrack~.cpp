@@ -32,8 +32,6 @@ typedef struct _partialtrack_tilde {
     t_int FFTSize;
     t_int HopSize;
     t_int MaxPeaks;
-    t_symbol *AnalPtrStr;
-    t_PtrPartialAnalysis *DataObj;
 
     t_sample *in;
     t_sample *out;
@@ -62,13 +60,28 @@ static void partialtrack_manipulations(t_partialtrack_tilde *x, t_symbol *s,
             x->Params->sMidi[x->Params->sIndex] = ftom(centerFreq);
             x->Params->sVariation[x->Params->sIndex] = variation;
             x->Params->sIndex++;
+            post("[partialtrack~] Partial %f silenced", centerFreq);
         } else {
             pd_error(x, "[peaks~] Maximum number of silenced partials reached");
         }
+    } else if (method == "transpose") {
+        float centerFreq = atom_getfloatarg(1, argc, argv);
+        float variation = atom_getfloatarg(2, argc, argv);
+        float cents = atom_getfloatarg(3, argc, argv);
+        x->Params->tMidi[x->Params->sIndex] = ftom(centerFreq);
+        x->Params->tVariation[x->Params->sIndex] = variation;
+        x->Params->tCents[x->Params->sIndex] = cents;
+        x->Params->tIndex++;
+    } else if (method == "transposeall") {
+        float cents = atom_getfloatarg(1, argc, argv);
+        x->Params->all_cents = cents;
+        x->Params->all_exec = true;
     } else if (method == "reset") {
         x->Params->sIndex = 0;
         x->Params->aIndex = 0;
         x->Params->tIndex = 0;
+        x->Params->all_exec = false;
+        post("[partialtrack~] Manipulations reseted");
     }
 }
 
@@ -76,6 +89,41 @@ static void partialtrack_manipulations(t_partialtrack_tilde *x, t_symbol *s,
 static void partialtrack_set(t_partialtrack_tilde *x, t_symbol *s, int argc,
                              t_atom *argv) {
     std::string method = atom_getsymbolarg(0, argc, argv)->s_name;
+
+    std::vector<std::string> validImplementations = {"loris", "sndobj", "sms",
+                                                     "mq"};
+
+    if (method == "peak") {
+        // check if the method is valid
+        std::string pd = atom_getsymbolarg(1, argc, argv)->s_name;
+        if (std::find(validImplementations.begin(), validImplementations.end(),
+                      pd) == validImplementations.end()) {
+            pd_error(x, "[partialtrack~] Invalid Peak Detection method");
+            return;
+        }
+        x->RealTimeData->PdMethod = pd;
+        logpost(x, 2, "[partialtrack~] Peak Detection method set to %s",
+                pd.c_str());
+    } else if (method == "partialtrack") {
+        std::string pt = atom_getsymbolarg(1, argc, argv)->s_name;
+        if (std::find(validImplementations.begin(), validImplementations.end(),
+                      pt) == validImplementations.end()) {
+            pd_error(x, "[partialtrack~] Invalid Peak Detection method");
+            return;
+        }
+        x->RealTimeData->PtMethod = atom_getsymbolarg(1, argc, argv)->s_name;
+        logpost(x, 2, "[partialtrack~] Partial Tracking method set to %s",
+                pt.c_str());
+    } else if (method == "synth") {
+        std::string synth = atom_getsymbolarg(1, argc, argv)->s_name;
+        if (std::find(validImplementations.begin(), validImplementations.end(),
+                      synth) == validImplementations.end()) {
+            pd_error(x, "[partialtrack~] Invalid Peak Detection method");
+            return;
+        }
+        x->RealTimeData->SyMethod = atom_getsymbolarg(1, argc, argv)->s_name;
+        logpost(x, 2, "[partialtrack~] Synth method set to %s", synth.c_str());
+    }
 
     return;
 }
@@ -94,6 +142,8 @@ static void partialtrack_execute(t_partialtrack_tilde *x) {
         simpl::Frame *Frame = &Anal->Frame;
         simpl::Peak *Peak = Frame->partial(i);
         x->Params->silence(Peak);
+        x->Params->transpose(Peak);
+        x->Params->transposeall(Peak);
     }
 
     // Synth
@@ -198,14 +248,16 @@ static void *partialtrack_new(t_symbol *s, int argc, t_atom *argv) {
     x->Params->reset();
     x->in = new t_sample[x->FFTSize];
     x->out = new t_sample[size];
+    for (int i = 0; i < size; i++) {
+        x->in[i] = 0;
+        x->out[i] = 0;
+    }
 
     return x;
 }
 
 // ─────────────────────────────────────
 void partialtrack_free(t_partialtrack_tilde *x) {
-    killAnalisysPtr(x->DataObj);
-    delete x->DataObj;
     delete x->RealTimeData;
     delete x->in;
     delete x->out;

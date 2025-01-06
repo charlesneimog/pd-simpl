@@ -12,55 +12,44 @@ double transFreq(double originalFrequency, double cents) {
 // ─────────────────────────────────────
 void TransParams::transpose(simpl::Peak *Peak) {
     if (Peak != nullptr && tIndex > 0 && Peak->frequency != 0) {
-        for (int i = 0; i < tIndex; i++) {
-            if (Peak->frequency >= tCenterFreq[i] - tVariation[i] &&
-                Peak->frequency <= tCenterFreq[i] + tVariation[i]) {
-                float newFreq = transFreq(Peak->frequency, tCents[i]);
-                Peak->frequency = newFreq;
+        for (int j = 0; j < tIndex; j++) {
+            float variance = tVariation[j];
+            float lowFreq = m2f(tMidi[j] - variance * 0.01);
+            float highFreq = m2f(tMidi[j] + variance * 0.01);
+            if (Peak->frequency >= lowFreq && Peak->frequency <= highFreq) {
+                Peak->frequency = m2f(tMidi[j] + (tCents[j] * 0.01));
             }
         }
     }
 }
 
 // ─────────────────────────────────────
-void TransParams::changeamps(simpl::Peak *Peak) {
-    if (Peak != nullptr) {
-        if (Peak->frequency == 0) {
-            return;
-        }
-        for (int i = 0; i < aIndex; i++) {
-            if (Peak->frequency >= aCenterFreq[i] - aVariation[i] &&
-                Peak->frequency <= aCenterFreq[i] + aVariation[i]) {
-                float newFreq = transFreq(Peak->frequency, tCents[i]);
-                Peak->amplitude *= aAmpsFactor[i];
-            }
-        }
+void TransParams::transposeall(simpl::Peak *Peak) {
+    if (Peak != nullptr && all_exec) {
+        float midi = f2m(Peak->frequency);
+        Peak->frequency = m2f(midi + (all_cents * 0.01));
     }
 }
+
+// ─────────────────────────────────────
+void TransParams::changeamps(simpl::Peak *Peak) {}
 
 // ─────────────────────────────────────
 void TransParams::silence(simpl::Peak *Peak) {
-    for (int j = 0; j < sIndex; j++) {
-        float variance = sVariation[j];
-        float lowFreq = m2f(sMidi[j] - variance * 0.01);
-        float highFreq = m2f(sMidi[j] + variance * 0.01);
-        if (Peak->frequency >= lowFreq && Peak->frequency <= highFreq) {
-            Peak->amplitude = 0;
+    if (Peak != nullptr && sIndex > 0 && Peak->frequency != 0) {
+        for (int j = 0; j < sIndex; j++) {
+            float variance = sVariation[j];
+            float lowFreq = m2f(sMidi[j] - variance * 0.01);
+            float highFreq = m2f(sMidi[j] + variance * 0.01);
+            if (Peak->frequency >= lowFreq && Peak->frequency <= highFreq) {
+                Peak->amplitude = 0;
+            }
         }
     }
 }
 
 // ─────────────────────────────────────
-void TransParams::expand(simpl::Peak *Peak) {
-    if (Peak != nullptr) {
-        if (Peak->frequency == 0 || ePrevFreq == 0) {
-            return;
-        }
-        float d = (Peak->frequency - ePrevFreq) * eFactor;
-        float newFreq = m2f(f2m(ePrevFreq) + d);
-        Peak->frequency = m2f(f2m(ePrevFreq) + d);
-    }
-}
+void TransParams::expand(simpl::Peak *Peak) {}
 
 // ─────────────────────────────────────
 void TransParams::reset() {
