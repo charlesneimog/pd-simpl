@@ -193,7 +193,7 @@ static void *partialtrack_new(t_symbol *s, int argc, t_atom *argv) {
     x->Sr = sys_getsr();
     x->FFTSize = 2048;
     x->HopSize = 512;
-    x->MaxPeaks = 127;
+    x->MaxPeaks = 1024;
 
     std::string pd = "loris";
     std::string pt = "sms";
